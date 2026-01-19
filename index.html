@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guardian Futures Engine</title>
+  <style>
+    body{margin:0;font-family:system-ui,Segoe UI,Arial;background:#050b1e;color:#fff;padding:28px}
+    .wrap{max-width:960px;margin:0 auto}
+    .top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+    h1{margin:0;font-size:22px}
+    .sub{color:#9fb3ff;margin-top:6px;font-size:13px;line-height:1.4}
+    .card{margin-top:16px;background:#0b1638;border:1px solid rgba(255,255,255,.10);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.55);overflow:hidden}
+    .head{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.10)}
+    .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    select,input,button{border-radius:12px;border:1px solid rgba(255,255,255,.12);background:#020617;color:#fff;padding:10px 12px;font-size:14px}
+    button{background:#2563eb;border:none;font-weight:700;cursor:pointer}
+    button:hover{background:#1d4ed8}
+    .pill{font-size:12px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);color:#c7d2fe}
+    .body{padding:16px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .kv{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px}
+    .k{color:#9fb3ff;font-size:12px;margin-bottom:6px}
+    .v{font-size:16px;font-weight:800}
+    pre{margin-top:12px;background:#020617;border:1px solid rgba(255,255,255,.10);border-radius:14px;padding:12px;overflow:auto;color:#e5e7eb}
+    @media(max-width:800px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Guardian Futures Engine</h1>
+        <div class="sub">Hosted on Vercel. Generates a Trade Card (MVP). No automation.</div>
+      </div>
+      <div class="pill" id="status">Idle</div>
+    </div>
+
+    <div class="card">
+      <div class="head">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <div style="font-weight:900">Trade Card</div>
+          <div class="pill" id="state">—</div>
+          <div class="pill" id="trend">15m: —</div>
+        </div>
+        <div class="controls">
+          <select id="symbol">
+            <option>BTCUSDT</option>
+            <option>ETHUSDT</option>
+          </select>
+          <input id="equity" type="number" value="200" min="10" step="10" />
+          <button onclick="run()">Analyze</button>
+        </div>
+      </div>
+      <div class="body">
+        <div class="grid">
+          <div class="kv"><div class="k">Symbol</div><div class="v" id="kvSymbol">—</div></div>
+          <div class="kv"><div class="k">Risk</div><div class="v" id="kvRisk">—</div></div>
+          <div class="kv"><div class="k">Action</div><div class="v" id="kvAction">—</div></div>
+          <div class="kv"><div class="k">Reason</div><div class="v" id="kvReason">—</div></div>
+        </div>
+        <pre id="raw">Click Analyze…</pre>
+      </div>
+    </div>
+  </div>
+
+<script>
+async function run(){
+  const symbol = document.getElementById("symbol").value;
+  const equity = document.getElementById("equity").value || 200;
+
+  document.getElementById("status").textContent = "Fetching…";
+  const r = await fetch("/api/analyze?symbol=" + encodeURIComponent(symbol) + "&equity=" + encodeURIComponent(equity), { cache: "no-store" });
+  const j = await r.json();
+
+  document.getElementById("status").textContent = "Ready";
+  document.getElementById("state").textContent = j.state || "—";
+  document.getElementById("trend").textContent = "15m: " + (j.trend?.dir || "—");
+
+  document.getElementById("kvSymbol").textContent = j.symbol || symbol;
+  document.getElementById("kvRisk").textContent = ((j.risk?.riskPercent ?? 0.015) * 100).toFixed(1) + "% (" + (j.risk?.mode || "BASE") + ")";
+  document.getElementById("kvReason").textContent = j.reason || "—";
+
+  const action = (j.state === "TRADE_AVAILABLE") ? "Trade allowed" : (j.state === "BLOCKED" ? "Trading blocked" : "Stand down");
+  document.getElementById("kvAction").textContent = action;
+
+  document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
+}
+</script>
+</body>
+</html>

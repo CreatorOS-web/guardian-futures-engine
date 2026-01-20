@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Guardian Futures Engine</title>
 
-  <!-- Clean, professional font (loads fast via Google Fonts) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -37,17 +36,11 @@
       padding:28px;
     }
     .wrap{max-width:1040px;margin:0 auto}
-    .top{
-      display:flex; gap:14px; align-items:flex-start; justify-content:space-between;
-      margin-bottom:18px; flex-wrap:wrap;
-    }
+    .top{display:flex; gap:14px; align-items:flex-start; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap;}
     h1{font-size:22px;margin:0 0 6px 0;letter-spacing:.2px}
     .sub{color:var(--muted);font-size:13px;line-height:1.5;max-width:720px}
     .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
-    .chip{
-      font-size:12px;padding:6px 10px;border-radius:999px;background:var(--chip);
-      border:1px solid var(--border);color:rgba(238,242,255,.78)
-    }
+    .chip{font-size:12px;padding:6px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--border);color:rgba(238,242,255,.78)}
 
     .grid{display:grid;grid-template-columns: 1.25fr .75fr;gap:14px}
     @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
@@ -87,6 +80,7 @@
       font-family: inherit;
     }
     input{width:150px}
+
     button{
       padding:10px 14px;
       border-radius:12px;
@@ -100,6 +94,8 @@
     }
     button:hover{background: rgba(255,255,255,.14)}
     button:active{transform: translateY(1px)}
+    .btnPrimary{background: rgba(37,99,235,.35); border-color: rgba(37,99,235,.55);}
+    .btnPrimary:hover{background: rgba(37,99,235,.45);}
 
     .cardBody{padding:16px}
     .kvs{display:grid;grid-template-columns: 1fr 1fr;gap:10px;margin-top:14px}
@@ -112,17 +108,32 @@
     .kv .k{font-size:12px;color:var(--muted);margin-bottom:6px}
     .kv .v{font-size:16px;font-weight:800;letter-spacing:.15px}
 
-    .whyBox{
+    .whyBox, .levelsBox{
       margin-top:14px;
       padding:12px;border-radius:14px;background: rgba(0,0,0,.16);
       border:1px solid var(--border);
     }
-    .whyHead{
-      display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px
+    .boxHead{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;
     }
-    .whyHead h3{margin:0;font-size:13px;color:var(--muted);font-weight:900;letter-spacing:.2px}
+    .boxHead h3{margin:0;font-size:13px;color:var(--muted);font-weight:900;letter-spacing:.2px}
     .whyList{margin:0;padding-left:18px}
     .whyList li{margin:7px 0;color:rgba(238,242,255,.78);line-height:1.4}
+
+    .levelsGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 640px){ .levelsGrid{grid-template-columns:1fr} }
+
+    .lvl{
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.18);
+      border:1px solid var(--border);
+    }
+    .lvl .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .lvl .v{font-size:16px;font-weight:900}
+    .lvl .s{font-size:12px;color:rgba(238,242,255,.72);margin-top:6px}
 
     .mono{
       margin-top:14px;
@@ -137,7 +148,6 @@
     .sideNote{color:rgba(238,242,255,.76);font-size:13px;line-height:1.55}
     .sideNote strong{color:var(--text)}
     .sideNote .small{color:var(--muted);font-size:12px}
-    a{color:#a5b4fc}
   </style>
 </head>
 <body>
@@ -147,13 +157,13 @@
         <h1>Guardian Futures Engine</h1>
         <div class="sub">
           Clean Trade Card output for <strong>BTCUSDT</strong> and <strong>ETHUSDT</strong>.
-          This is decision support first — disciplined signals only.
+          Decision support first — disciplined signals only.
         </div>
         <div class="chips">
           <span class="chip">Vercel Hosted</span>
           <span class="chip">15m Structure + 5m Trigger</span>
           <span class="chip">Partials 30/30/40</span>
-          <span class="chip">Protect-from-yourself design</span>
+          <span class="chip">Explainable “Why”</span>
         </div>
       </div>
       <div class="badge" id="statusBadge">Idle</div>
@@ -173,32 +183,59 @@
               <option>ETHUSDT</option>
             </select>
             <input id="equity" type="number" value="200" min="10" step="10" />
-            <button onclick="run()">Analyze</button>
+            <button class="btnPrimary" onclick="run()">Analyze</button>
           </div>
         </div>
 
         <div class="cardBody">
           <div class="kvs">
-            <div class="kv">
-              <div class="k">Symbol</div>
-              <div class="v" id="kvSymbol">—</div>
+            <div class="kv"><div class="k">Symbol</div><div class="v" id="kvSymbol">—</div></div>
+            <div class="kv"><div class="k">Trend</div><div class="v" id="kvTrend">—</div></div>
+            <div class="kv"><div class="k">Action</div><div class="v" id="kvAction">—</div></div>
+            <div class="kv"><div class="k">Reason</div><div class="v" id="kvReason">—</div></div>
+          </div>
+
+          <!-- Levels (hidden unless TRADE_AVAILABLE has levels) -->
+          <div class="levelsBox" id="levelsBox" style="display:none;">
+            <div class="boxHead">
+              <h3>Levels</h3>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <div class="badge" id="levelsDir">—</div>
+                <button onclick="copyLevels()">Copy Levels</button>
+              </div>
             </div>
-            <div class="kv">
-              <div class="k">Trend</div>
-              <div class="v" id="kvTrend">—</div>
-            </div>
-            <div class="kv">
-              <div class="k">Action</div>
-              <div class="v" id="kvAction">—</div>
-            </div>
-            <div class="kv">
-              <div class="k">Reason</div>
-              <div class="v" id="kvReason">—</div>
+
+            <div class="levelsGrid">
+              <div class="lvl">
+                <div class="k">Entry</div>
+                <div class="v" id="lvlEntry">—</div>
+                <div class="s" id="lvlEntryNote">—</div>
+              </div>
+              <div class="lvl">
+                <div class="k">Stop</div>
+                <div class="v" id="lvlStop">—</div>
+                <div class="s" id="lvlRiskNote">—</div>
+              </div>
+              <div class="lvl">
+                <div class="k">TP1</div>
+                <div class="v" id="lvlTP1">—</div>
+                <div class="s">+0.5R • Close 30%</div>
+              </div>
+              <div class="lvl">
+                <div class="k">TP2</div>
+                <div class="v" id="lvlTP2">—</div>
+                <div class="s">+1.0R • Close 30%</div>
+              </div>
+              <div class="lvl" style="grid-column:1/-1;">
+                <div class="k">Runner</div>
+                <div class="v">40%</div>
+                <div class="s">Trail structure (next swing levels)</div>
+              </div>
             </div>
           </div>
 
           <div class="whyBox">
-            <div class="whyHead">
+            <div class="boxHead">
               <h3>Why</h3>
               <div class="badge" id="whyCount">0</div>
             </div>
@@ -221,8 +258,8 @@
         <div class="cardBody">
           <div class="sideNote">
             <p><strong>1)</strong> Choose BTCUSDT or ETHUSDT and click <strong>Analyze</strong>.</p>
-            <p><strong>2)</strong> If it says <strong>NO_TRADE</strong>, that’s discipline — not failure.</p>
-            <p><strong>3)</strong> When it becomes <strong>TRADE_AVAILABLE</strong>, you’ll get entry/stop/targets.</p>
+            <p><strong>2)</strong> <strong>NO_TRADE</strong> = discipline. Wait for the reclaim close trigger.</p>
+            <p><strong>3)</strong> <strong>TRADE_AVAILABLE</strong> shows Entry/Stop/TP1/TP2 and lets you copy levels.</p>
             <p class="small">Endpoint example: <span class="chip">/api/analyze?symbol=BTCUSDT&equity=200</span></p>
           </div>
         </div>
@@ -231,28 +268,26 @@
   </div>
 
 <script>
+let lastCard = null;
+
 function setBadge(el, text, kind){
   el.textContent = text;
   el.classList.remove("good","warn","bad");
   if(kind) el.classList.add(kind);
 }
-
 function kindForState(state){
   if(state === "TRADE_AVAILABLE") return "good";
   if(state === "BLOCKED") return "bad";
   return "warn";
 }
-
 function kindForTrend(dir){
   if(dir === "UP") return "good";
   if(dir === "DOWN") return "bad";
   return "warn";
 }
-
 function renderWhy(why){
   const list = document.getElementById("whyList");
   list.innerHTML = "";
-
   const items = Array.isArray(why) && why.length ? why : ["No details provided."];
   for(const t of items){
     const li = document.createElement("li");
@@ -260,6 +295,57 @@ function renderWhy(why){
     list.appendChild(li);
   }
   document.getElementById("whyCount").textContent = String(items.length);
+}
+
+function showLevels(levels){
+  const box = document.getElementById("levelsBox");
+  if(!levels){
+    box.style.display = "none";
+    return;
+  }
+  box.style.display = "block";
+
+  document.getElementById("levelsDir").textContent = levels.dir || "—";
+
+  document.getElementById("lvlEntry").textContent = levels.entry ?? "—";
+  document.getElementById("lvlStop").textContent  = levels.stop ?? "—";
+  document.getElementById("lvlTP1").textContent   = levels.tp1 ?? "—";
+  document.getElementById("lvlTP2").textContent   = levels.tp2 ?? "—";
+
+  document.getElementById("lvlEntryNote").textContent = "Trigger: reclaim close";
+  // Show risk distance for quick sanity
+  const entry = Number(levels.entry);
+  const stop = Number(levels.stop);
+  const dist = (Number.isFinite(entry) && Number.isFinite(stop)) ? Math.abs(entry - stop) : null;
+  document.getElementById("lvlRiskNote").textContent = dist ? ("Stop distance: " + dist.toFixed(2)) : "—";
+}
+
+async function copyLevels(){
+  if(!lastCard?.levels){
+    alert("No levels to copy yet.");
+    return;
+  }
+  const c = lastCard;
+  const L = c.levels;
+
+  const text =
+`GUARDIAN TRADE CARD
+Symbol: ${c.symbol}
+Direction: ${L.dir}
+Entry: ${L.entry}
+Stop: ${L.stop}
+TP1: ${L.tp1} (30%)
+TP2: ${L.tp2} (30%)
+Runner: 40%
+Reason: ${c.reason}`;
+
+  try{
+    await navigator.clipboard.writeText(text);
+    alert("Copied levels to clipboard.");
+  }catch{
+    // Fallback for restrictive browsers
+    prompt("Copy this:", text);
+  }
 }
 
 async function run(){
@@ -270,6 +356,7 @@ async function run(){
 
   const r = await fetch("/api/analyze?symbol=" + encodeURIComponent(symbol) + "&equity=" + encodeURIComponent(equity), { cache: "no-store" });
   const j = await r.json();
+  lastCard = j;
 
   setBadge(document.getElementById("statusBadge"), "Ready", "good");
 
@@ -288,6 +375,8 @@ async function run(){
     "Stand down";
 
   renderWhy(j.why);
+  showLevels(j.levels);
+
   document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
 }
 

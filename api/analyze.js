@@ -12,6 +12,7 @@ export default async function handler(req, res) {
     trend: { tf: "15m", dir: "NONE" },
     risk: { equity, mode: "BASE", riskPercent: 0.015 },
     levels: null,
+    position: null,
     why: []
   };
 
@@ -26,13 +27,56 @@ export default async function handler(req, res) {
     );
   }
 
-  // ---------- TEST MODE (forces a trade card with levels) ----------
+  function round(n) {
+    if (!Number.isFinite(n)) return n;
+    return Math.round(n * 100) / 100;
+  }
+
+  function computePosition({ equity, riskPercent, entry, stop }) {
+    const riskUSD = equity * riskPercent; // dollars you're willing to lose
+    const stopDistance = Math.abs(entry - stop);
+    if (!(stopDistance > 0)) return null;
+
+    // Simple MVP sizing:
+    // If you use a 1x "spot-like" position, PnL per $1 notional moves ~ (price move / entry).
+    // So loss fraction at stop ≈ stopDistance / entry.
+    // Notional * (stopDistance/entry) ≈ riskUSD  => notional ≈ riskUSD * entry / stopDistance
+    const lossFrac = stopDistance / entry;
+    const notionalUSD = riskUSD / lossFrac;
+
+    const qtyApprox = notionalUSD / entry;
+
+    // Optional hint only (not advice): if notional > equity, you’ll need leverage/margin.
+    let leverageHint = "1x";
+    if (notionalUSD > equity) {
+      const lev = notionalUSD / equity;
+      leverageHint = `${round(lev)}x (approx)`;
+    }
+
+    return {
+      riskUSD: round(riskUSD),
+      stopDistance: round(stopDistance),
+      lossFrac: round(lossFrac),
+      notionalUSD: round(notionalUSD),
+      qtyApprox: round(qtyApprox),
+      leverageHint
+    };
+  }
+
+  // ---------- TEST MODE ----------
   if (test) {
     const entry = symbol === "BTCUSDT" ? 93000 : 3200;
     const stop = symbol === "BTCUSDT" ? 93600 : 3230;
     const R = Math.abs(stop - entry);
     const tp1 = entry - 0.5 * R;
     const tp2 = entry - 1.0 * R;
+
+    const position = computePosition({
+      equity,
+      riskPercent: base.risk.riskPercent,
+      entry,
+      stop
+    });
 
     return res.status(200).end(
       JSON.stringify({
@@ -42,16 +86,17 @@ export default async function handler(req, res) {
         reason: "TEST MODE: Forced levels for UI verification.",
         levels: {
           dir: "SHORT",
-          entry: Math.round(entry * 100) / 100,
-          stop: Math.round(stop * 100) / 100,
-          tp1: Math.round(tp1 * 100) / 100,
-          tp2: Math.round(tp2 * 100) / 100,
+          entry: round(entry),
+          stop: round(stop),
+          tp1: round(tp1),
+          tp2: round(tp2),
           partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
         },
+        position,
         why: [
           "✔ TEST MODE enabled",
           "✔ Returning forced TRADE_AVAILABLE",
-          "✔ Use to verify Levels UI + Copy Levels",
+          "✔ Includes position sizing (risk dollars)",
           "✱ Remove test=1 for real mode"
         ]
       })
@@ -105,11 +150,6 @@ export default async function handler(req, res) {
     }
 
     return { swingHighs, swingLows };
-  }
-
-  function round(n) {
-    if (!Number.isFinite(n)) return n;
-    return Math.round(n * 100) / 100;
   }
 
   // ---------- Engine ----------
@@ -253,25 +293,35 @@ export default async function handler(req, res) {
       const tp1 = entry + 0.5 * R;
       const tp2 = entry + 1.0 * R;
 
+      const levels = {
+        dir: "LONG",
+        entry: round(entry),
+        stop: round(stop),
+        tp1: round(tp1),
+        tp2: round(tp2),
+        partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
+      };
+
+      const position = computePosition({
+        equity,
+        riskPercent: base.risk.riskPercent,
+        entry: levels.entry,
+        stop: levels.stop
+      });
+
       return res.status(200).end(
         JSON.stringify({
           ...base,
           trend: { tf: "15m", dir: trendDir },
           state: "TRADE_AVAILABLE",
           reason: `LONG available: 15m UP + 5m reclaim close above ${round(reclaim.price)}.`,
-          levels: {
-            dir: "LONG",
-            entry: round(entry),
-            stop: round(stop),
-            tp1: round(tp1),
-            tp2: round(tp2),
-            partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
-          },
+          levels,
+          position,
           why: [
             ...trendWhy,
             "✔ 5m pullback valid",
             `✔ Reclaim close confirmed (> ${round(reclaim.price)})`,
-            `✔ Entry ${round(entry)} / Stop ${round(stop)} / TP1 ${round(tp1)} / TP2 ${round(tp2)}`
+            `✔ Risk: ~$${position?.riskUSD ?? "?"} (size auto-calc)`
           ]
         })
       );
@@ -348,25 +398,35 @@ export default async function handler(req, res) {
       const tp1 = entry - 0.5 * R;
       const tp2 = entry - 1.0 * R;
 
+      const levels = {
+        dir: "SHORT",
+        entry: round(entry),
+        stop: round(stop),
+        tp1: round(tp1),
+        tp2: round(tp2),
+        partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
+      };
+
+      const position = computePosition({
+        equity,
+        riskPercent: base.risk.riskPercent,
+        entry: levels.entry,
+        stop: levels.stop
+      });
+
       return res.status(200).end(
         JSON.stringify({
           ...base,
           trend: { tf: "15m", dir: trendDir },
           state: "TRADE_AVAILABLE",
           reason: `SHORT available: 15m DOWN + 5m reclaim close below ${round(reclaim.price)}.`,
-          levels: {
-            dir: "SHORT",
-            entry: round(entry),
-            stop: round(stop),
-            tp1: round(tp1),
-            tp2: round(tp2),
-            partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
-          },
+          levels,
+          position,
           why: [
             ...trendWhy,
             "✔ 5m pullback valid",
             `✔ Reclaim close confirmed (< ${round(reclaim.price)})`,
-            `✔ Entry ${round(entry)} / Stop ${round(stop)} / TP1 ${round(tp1)} / TP2 ${round(tp2)}`
+            `✔ Risk: ~$${position?.riskUSD ?? "?"} (size auto-calc)`
           ]
         })
       );

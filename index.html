@@ -124,7 +124,7 @@
     .kv .k{font-size:12px;color:var(--muted);margin-bottom:6px}
     .kv .v{font-size:16px;font-weight:800;letter-spacing:.15px}
 
-    .whyBox, .levelsBox, .posBox{
+    .whyBox, .levelsBox, .posBox, .ordersBox{
       margin-top:14px;
       padding:12px;border-radius:14px;background: rgba(0,0,0,.16);
       border:1px solid var(--border);
@@ -136,20 +136,20 @@
     .whyList{margin:0;padding-left:18px}
     .whyList li{margin:7px 0;color:rgba(238,242,255,.78);line-height:1.4}
 
-    .levelsGrid, .posGrid{
+    .levelsGrid, .posGrid, .ordersGrid{
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap:10px;
     }
-    @media (max-width: 640px){ .levelsGrid, .posGrid{grid-template-columns:1fr} }
+    @media (max-width: 640px){ .levelsGrid, .posGrid, .ordersGrid{grid-template-columns:1fr} }
 
-    .lvl, .pos{
+    .lvl, .pos, .ord{
       padding:12px;border-radius:14px;background: rgba(0,0,0,.18);
       border:1px solid var(--border);
     }
-    .lvl .k, .pos .k{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .lvl .v, .pos .v{font-size:16px;font-weight:900}
-    .lvl .s, .pos .s{font-size:12px;color:rgba(238,242,255,.72);margin-top:6px}
+    .lvl .k, .pos .k, .ord .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .lvl .v, .pos .v, .ord .v{font-size:16px;font-weight:900}
+    .lvl .s, .pos .s, .ord .s{font-size:12px;color:rgba(238,242,255,.72);margin-top:6px}
 
     .mono{
       margin-top:14px;
@@ -160,10 +160,18 @@
       overflow:auto; max-height:260px;
       white-space:pre;
     }
-
+    .notes{
+      margin-top:10px;
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.22);
+      border:1px solid var(--border);
+      color: rgba(238,242,255,.85);
+      font-size:13px;
+      line-height:1.45;
+    }
+    .notes ul{margin:0;padding-left:18px}
+    .notes li{margin:6px 0;color:rgba(238,242,255,.78)}
     .sideNote{color:rgba(238,242,255,.76);font-size:13px;line-height:1.55}
     .sideNote strong{color:var(--text)}
-    .sideNote .small{color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
@@ -179,7 +187,7 @@
           <span class="chip">Vercel Hosted</span>
           <span class="chip">15m Structure + 5m Trigger</span>
           <span class="chip">Partials 30/30/40</span>
-          <span class="chip">Position Sizing</span>
+          <span class="chip">Position + Orders</span>
         </div>
       </div>
       <div class="badge" id="statusBadge">Idle</div>
@@ -199,13 +207,10 @@
               <option>ETHUSDT</option>
             </select>
             <input id="equity" type="number" value="200" min="10" step="10" />
-
             <label class="toggle" title="For UI testing only (forces levels).">
               <input id="testToggle" type="checkbox" />
-              <span>Test</span>
-              <small>mode</small>
+              <span>Test</span><small>mode</small>
             </label>
-
             <button class="btnPrimary" onclick="run()">Analyze</button>
           </div>
         </div>
@@ -239,7 +244,7 @@
           <div class="posBox" id="posBox" style="display:none;">
             <div class="boxHead">
               <h3>Position</h3>
-              <div class="badge" id="posBadge">—</div>
+              <div class="badge">Sizing</div>
             </div>
             <div class="posGrid">
               <div class="pos"><div class="k">Risk (USD)</div><div class="v" id="posRisk">—</div><div class="s">Max loss if stop hits</div></div>
@@ -248,6 +253,26 @@
               <div class="pos"><div class="k">Leverage hint</div><div class="v" id="posLev">—</div><div class="s">Only if notional > equity</div></div>
               <div class="pos" style="grid-column:1/-1;"><div class="k">Stop distance</div><div class="v" id="posStopDist">—</div><div class="s">Absolute entry↔stop</div></div>
             </div>
+          </div>
+
+          <div class="ordersBox" id="ordersBox" style="display:none;">
+            <div class="boxHead">
+              <h3>Orders</h3>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <div class="badge" id="ordersSide">—</div>
+                <button onclick="copyOrders()">Copy Orders</button>
+              </div>
+            </div>
+
+            <div class="ordersGrid">
+              <div class="ord"><div class="k">Entry</div><div class="v" id="ordEntry">—</div><div class="s" id="ordEntryS">—</div></div>
+              <div class="ord"><div class="k">Stop Loss</div><div class="v" id="ordSL">—</div><div class="s" id="ordSLS">—</div></div>
+              <div class="ord"><div class="k">TP1 (30%)</div><div class="v" id="ordTP1">—</div><div class="s">Close 30%</div></div>
+              <div class="ord"><div class="k">TP2 (30%)</div><div class="v" id="ordTP2">—</div><div class="s">Close 30%</div></div>
+              <div class="ord" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
+            </div>
+
+            <div class="notes" id="ordersNotes" style="display:none;"></div>
           </div>
 
           <div class="whyBox">
@@ -273,9 +298,9 @@
         </div>
         <div class="cardBody">
           <div class="sideNote">
-            <p><strong>1)</strong> Choose BTCUSDT or ETHUSDT and click <strong>Analyze</strong>.</p>
-            <p><strong>2)</strong> <strong>NO_TRADE</strong> = discipline. Wait for the reclaim close trigger.</p>
-            <p><strong>3)</strong> <strong>TRADE_AVAILABLE</strong> shows Levels + Position sizing and lets you copy.</p>
+            <p><strong>1)</strong> Analyze → wait for <strong>TRADE_AVAILABLE</strong>.</p>
+            <p><strong>2)</strong> Use <strong>Orders</strong> as your Bybit checklist (SL/TP clarity).</p>
+            <p><strong>3)</strong> Risk is capped by sizing — that’s your “protect me from myself”.</p>
           </div>
         </div>
       </div>
@@ -332,12 +357,52 @@ function showPosition(pos){
   if(!pos){ box.style.display = "none"; return; }
   box.style.display = "block";
 
-  document.getElementById("posBadge").textContent = "Sizing";
   document.getElementById("posRisk").textContent = "$" + (pos.riskUSD ?? "—");
   document.getElementById("posNotional").textContent = "$" + (pos.notionalUSD ?? "—");
   document.getElementById("posQty").textContent = pos.qtyApprox ?? "—";
   document.getElementById("posLev").textContent = pos.leverageHint ?? "—";
   document.getElementById("posStopDist").textContent = pos.stopDistance ?? "—";
+}
+
+function showOrders(orders){
+  const box = document.getElementById("ordersBox");
+  if(!orders){ box.style.display = "none"; return; }
+  box.style.display = "block";
+
+  document.getElementById("ordersSide").textContent = `${orders.entrySide} • ${orders.entryType}`;
+  document.getElementById("ordEntry").textContent = orders.entryPrice ?? "—";
+  document.getElementById("ordEntryS").textContent = `Qty ≈ ${orders.qtyApprox} • ~$${orders.notionalUSD} notional`;
+
+  document.getElementByIdifty in" : "—";
+
+  const sl = orders.stopLoss?.price ?? "—";
+  const slSide = orders.stopLoss?.side ?? "—";
+  document.getElementById("ordSL").textContent = sl;
+  document.getElementById("ordSLS").textContent = `Exit side: ${slSide}`;
+
+  const tp1 = orders.takeProfits?.find(x => x.name==="TP1")?.price ?? "—";
+  const tp2 = orders.takeProfits?.find(x => x.name==="TP2")?.price ?? "—";
+  document.getElementById("ordTP1").textContent = tp1;
+  document.getElementById("ordTP2").textContent = tp2;
+
+  const notes = orders.notes;
+  const notesBox = document.getElementById("ordersNotes");
+  if(Array.isArray(notes) && notes.length){
+    notesBox.style.display = "block";
+    notesBox.innerHTML = "<ul>" + notes.map(n => `<li>${escapeHtml(n)}</li>`).join("") + "</ul>";
+  } else {
+    notesBox.style.display = "none";
+    notesBox.innerHTML = "";
+  }
+}
+
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 }
 
 async function copyLevels(){
@@ -350,7 +415,7 @@ async function copyLevels(){
   const P = c.position;
 
   const text =
-`GUARDIAN TRADE CARD
+`GUARDIAN LEVELS
 Symbol: ${c.symbol}
 Direction: ${L.dir}
 Entry: ${L.entry}
@@ -358,12 +423,43 @@ Stop: ${L.stop}
 TP1: ${L.tp1} (30%)
 TP2: ${L.tp2} (30%)
 Runner: 40%
-Risk: ${P?.riskUSD ? "$"+P.riskUSD : "—"}  | Notional: ${P?.notionalUSD ? "$"+P.notionalUSD : "—"} | Leverage: ${P?.leverageHint || "—"}
+Risk: ${P?.riskUSD ? "$"+P.riskUSD : "—"} | Notional: ${P?.notionalUSD ? "$"+P.notionalUSD : "—"} | Leverage: ${P?.leverageHint || "—"}
 Reason: ${c.reason}`;
 
   try{
     await navigator.clipboard.writeText(text);
     alert("Copied levels to clipboard.");
+  }catch{
+    prompt("Copy this:", text);
+  }
+}
+
+async function copyOrders(){
+  if(!lastCard?.orders){
+    alert("No orders to copy yet.");
+    return;
+  }
+  const o = lastCard.orders;
+  const notes = Array.isArray(o.notes) ? o.notes.join("\n- ") : "";
+  const tp1 = o.takeProfits?.find(x => x.name==="TP1")?.price ?? "—";
+  const tp2 = o.takeProfits?.find(x => x.name==="TP2")?.price ?? "—";
+
+  const text =
+`GUARDIAN ORDERS (BYBIT CHECKLIST)
+Symbol: ${o.symbol}
+Entry: ${o.entrySide} • ${o.entryType}
+Entry (info): ${o.entryPrice}
+Size: ~$${o.notionalUSD} notional • Qty ≈ ${o.qtyApprox}
+Stop Loss: ${o.stopLoss?.price} (Exit side: ${o.stopLoss?.side})
+TP1: ${tp1} (30%)
+TP2: ${tp2} (30%)
+Runner: 40% trail structure
+Notes:
+- ${notes}`;
+
+  try{
+    await navigator.clipboard.writeText(text);
+    alert("Copied orders to clipboard.");
   }catch{
     prompt("Copy this:", text);
   }
@@ -402,6 +498,7 @@ async function run(){
   renderWhy(j.why);
   showLevels(j.levels);
   showPosition(j.position);
+  showOrders(j.orders);
 
   document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
 }

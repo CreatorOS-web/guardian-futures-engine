@@ -1,6 +1,7 @@
 export default async function handler(req, res) {
   const symbol = String(req.query?.symbol || "BTCUSDT").toUpperCase();
   const equity = Number(req.query?.equity || 200);
+  const test = String(req.query?.test || "") === "1";
 
   res.setHeader("Content-Type", "application/json; charset=utf-8");
   res.setHeader("Cache-Control", "no-store");
@@ -8,7 +9,7 @@ export default async function handler(req, res) {
   const base = {
     ts: Date.now(),
     symbol,
-    trend: { tf: "15m", dir: "NONE" }, // UP | DOWN | NONE
+    trend: { tf: "15m", dir: "NONE" },
     risk: { equity, mode: "BASE", riskPercent: 0.015 },
     levels: null,
     why: []
@@ -21,6 +22,38 @@ export default async function handler(req, res) {
         state: "BLOCKED",
         reason: "Only BTCUSDT and ETHUSDT are supported.",
         why: ["✖ Unsupported symbol", "✔ Allowed: BTCUSDT, ETHUSDT"]
+      })
+    );
+  }
+
+  // ---------- TEST MODE (forces a trade card with levels) ----------
+  if (test) {
+    const entry = symbol === "BTCUSDT" ? 93000 : 3200;
+    const stop = symbol === "BTCUSDT" ? 93600 : 3230;
+    const R = Math.abs(stop - entry);
+    const tp1 = entry - 0.5 * R;
+    const tp2 = entry - 1.0 * R;
+
+    return res.status(200).end(
+      JSON.stringify({
+        ...base,
+        trend: { tf: "15m", dir: "DOWN" },
+        state: "TRADE_AVAILABLE",
+        reason: "TEST MODE: Forced levels for UI verification.",
+        levels: {
+          dir: "SHORT",
+          entry: Math.round(entry * 100) / 100,
+          stop: Math.round(stop * 100) / 100,
+          tp1: Math.round(tp1 * 100) / 100,
+          tp2: Math.round(tp2 * 100) / 100,
+          partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
+        },
+        why: [
+          "✔ TEST MODE enabled",
+          "✔ Returning forced TRADE_AVAILABLE",
+          "✔ Use to verify Levels UI + Copy Levels",
+          "✱ Remove test=1 for real mode"
+        ]
       })
     );
   }

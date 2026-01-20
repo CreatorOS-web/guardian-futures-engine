@@ -1,19 +1,403 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Guardian UI Marker</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guardian Futures Engine</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
   <style>
-    body{margin:0;font-family:system-ui;padding:40px;background:#070b18;color:#eef2ff}
-    .box{max-width:720px;margin:auto;padding:24px;border:1px solid rgba(255,255,255,.15);border-radius:16px}
-    .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.15);margin-top:10px}
+    :root{
+      --bg:#070b18;
+      --panel:#0c1430;
+      --panel2:#0a1026;
+      --border:rgba(255,255,255,.10);
+      --text:#eef2ff;
+      --muted:rgba(238,242,255,.70);
+      --good:#24d18a;
+      --warn:#ffd166;
+      --bad:#ff5c7a;
+      --chip:rgba(255,255,255,.08);
+      --shadow: 0 12px 40px rgba(0,0,0,.45);
+      --r:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(900px 500px at 15% -10%, rgba(36,209,138,.25), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(255,92,122,.18), transparent 55%),
+        var(--bg);
+      color:var(--text);
+      padding:28px;
+    }
+    .wrap{max-width:1040px;margin:0 auto}
+    .top{display:flex; gap:14px; align-items:flex-start; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap;}
+    h1{font-size:22px;margin:0 0 6px 0;letter-spacing:.2px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.5;max-width:720px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+    .chip{font-size:12px;padding:6px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--border);color:rgba(238,242,255,.78)}
+
+    .grid{display:grid;grid-template-columns: 1.25fr .75fr;gap:14px}
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
+      border:1px solid var(--border);
+      border-radius:var(--r);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .cardHeader{
+      padding:14px 16px;
+      display:flex;align-items:center;justify-content:space-between;gap:12px;
+      background: rgba(0,0,0,.14);
+      border-bottom:1px solid var(--border);
+      flex-wrap:wrap;
+    }
+    .titleRow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .badge{
+      font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);
+      background: rgba(255,255,255,.06);color:rgba(238,242,255,.78)
+    }
+    .badge.good{color:rgba(36,209,138,1);border-color:rgba(36,209,138,.35);background:rgba(36,209,138,.10)}
+    .badge.warn{color:rgba(255,209,102,1);border-color:rgba(255,209,102,.35);background:rgba(255,209,102,.10)}
+    .badge.bad{color:rgba(255,92,122,1);border-color:rgba(255,92,122,.35);background:rgba(255,92,122,.10)}
+
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    select,input{
+      background: var(--panel2);
+      border:1px solid var(--border);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      outline:none;
+      font-size:14px;
+      font-family: inherit;
+    }
+    input{width:150px}
+
+    button{
+      padding:10px 14px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.10);
+      color:var(--text);
+      cursor:pointer;
+      font-weight:800;
+      letter-spacing:.2px;
+      font-family: inherit;
+    }
+    button:hover{background: rgba(255,255,255,.14)}
+    button:active{transform: translateY(1px)}
+    .btnPrimary{background: rgba(37,99,235,.35); border-color: rgba(37,99,235,.55);}
+    .btnPrimary:hover{background: rgba(37,99,235,.45);}
+
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: rgba(238,242,255,.85);
+      font-size:13px;
+      user-select:none;
+    }
+    .toggle input{width:auto}
+    .toggle span{color:rgba(238,242,255,.85); font-weight:800}
+    .toggle small{color:var(--muted); font-weight:700}
+
+    .cardBody{padding:16px}
+    .kvs{display:grid;grid-template-columns: 1fr 1fr;gap:10px;margin-top:14px}
+    @media (max-width: 640px){ .kvs{grid-template-columns:1fr} }
+
+    .kv{
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.16);
+      border:1px solid var(--border);
+    }
+    .kv .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .kv .v{font-size:16px;font-weight:800;letter-spacing:.15px}
+
+    .whyBox, .levelsBox{
+      margin-top:14px;
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.16);
+      border:1px solid var(--border);
+    }
+    .boxHead{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;
+    }
+    .boxHead h3{margin:0;font-size:13px;color:var(--muted);font-weight:900;letter-spacing:.2px}
+    .whyList{margin:0;padding-left:18px}
+    .whyList li{margin:7px 0;color:rgba(238,242,255,.78);line-height:1.4}
+
+    .levelsGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    @media (max-width: 640px){ .levelsGrid{grid-template-columns:1fr} }
+
+    .lvl{
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.18);
+      border:1px solid var(--border);
+    }
+    .lvl .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .lvl .v{font-size:16px;font-weight:900}
+    .lvl .s{font-size:12px;color:rgba(238,242,255,.72);margin-top:6px}
+
+    .mono{
+      margin-top:14px;
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.22);
+      border:1px solid var(--border);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px; color: rgba(238,242,255,.85);
+      overflow:auto; max-height:260px;
+      white-space:pre;
+    }
+
+    .sideNote{color:rgba(238,242,255,.76);font-size:13px;line-height:1.55}
+    .sideNote strong{color:var(--text)}
+    .sideNote .small{color:var(--muted);font-size:12px}
   </style>
 </head>
 <body>
-  <div class="box">
-    <h1>GUARDIAN UI MARKER</h1>
-    <p>If you can see this page, you are editing the correct <strong>index.html</strong>.</p>
-    <div class="pill">MARKER: TEST-TOGGLE NEXT</div>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Guardian Futures Engine</h1>
+        <div class="sub">
+          Clean Trade Card output for <strong>BTCUSDT</strong> and <strong>ETHUSDT</strong>.
+          Decision support first — disciplined signals only.
+        </div>
+        <div class="chips">
+          <span class="chip">Vercel Hosted</span>
+          <span class="chip">15m Structure + 5m Trigger</span>
+          <span class="chip">Partials 30/30/40</span>
+          <span class="chip">Explainable “Why”</span>
+        </div>
+      </div>
+      <div class="badge" id="statusBadge">Idle</div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="cardHeader">
+          <div class="titleRow">
+            <div style="font-weight:900;">Trade Card</div>
+            <div class="badge" id="stateBadge">—</div>
+            <div class="badge" id="trendBadge">15m: —</div>
+          </div>
+          <div class="controls">
+            <select id="symbol">
+              <option>BTCUSDT</option>
+              <option>ETHUSDT</option>
+            </select>
+            <input id="equity" type="number" value="200" min="10" step="10" />
+
+            <label class="toggle" title="For UI testing only (forces levels).">
+              <input id="testToggle" type="checkbox" />
+              <span>Test</span>
+              <small>mode</small>
+            </label>
+
+            <button class="btnPrimary" onclick="run()">Analyze</button>
+          </div>
+        </div>
+
+        <div class="cardBody">
+          <div class="kvs">
+            <div class="kv"><div class="k">Symbol</div><div class="v" id="kvSymbol">—</div></div>
+            <div class="kv"><div class="k">Trend</div><div class="v" id="kvTrend">—</div></div>
+            <div class="kv"><div class="k">Action</div><div class="v" id="kvAction">—</div></div>
+            <div class="kv"><div class="k">Reason</div><div class="v" id="kvReason">—</div></div>
+          </div>
+
+          <div class="levelsBox" id="levelsBox" style="display:none;">
+            <div class="boxHead">
+              <h3>Levels</h3>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <div class="badge" id="levelsDir">—</div>
+                <button onclick="copyLevels()">Copy Levels</button>
+              </div>
+            </div>
+
+            <div class="levelsGrid">
+              <div class="lvl">
+                <div class="k">Entry</div>
+                <div class="v" id="lvlEntry">—</div>
+                <div class="s">Trigger: reclaim close</div>
+              </div>
+              <div class="lvl">
+                <div class="k">Stop</div>
+                <div class="v" id="lvlStop">—</div>
+                <div class="s" id="lvlRiskNote">—</div>
+              </div>
+              <div class="lvl">
+                <div class="k">TP1</div>
+                <div class="v" id="lvlTP1">—</div>
+                <div class="s">+0.5R • Close 30%</div>
+              </div>
+              <div class="lvl">
+                <div class="k">TP2</div>
+                <div class="v" id="lvlTP2">—</div>
+                <div class="s">+1.0R • Close 30%</div>
+              </div>
+              <div class="lvl" style="grid-column:1/-1;">
+                <div class="k">Runner</div>
+                <div class="v">40%</div>
+                <div class="s">Trail structure (next swings)</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="whyBox">
+            <div class="boxHead">
+              <h3>Why</h3>
+              <div class="badge" id="whyCount">0</div>
+            </div>
+            <ul class="whyList" id="whyList">
+              <li>Click Analyze to load a Trade Card.</li>
+            </ul>
+          </div>
+
+          <div class="mono" id="raw">Waiting…</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="cardHeader">
+          <div class="titleRow">
+            <div style="font-weight:900;">How to use</div>
+            <div class="badge warn">MVP</div>
+          </div>
+        </div>
+        <div class="cardBody">
+          <div class="sideNote">
+            <p><strong>1)</strong> Choose BTCUSDT or ETHUSDT and click <strong>Analyze</strong>.</p>
+            <p><strong>2)</strong> <strong>NO_TRADE</strong> = discipline. Wait for the reclaim close trigger.</p>
+            <p><strong>3)</strong> <strong>TRADE_AVAILABLE</strong> shows Entry/Stop/TP1/TP2 and lets you copy levels.</p>
+            <p class="small"><strong>Test mode:</strong> forces levels for UI verification.</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
+
+<script>
+let lastCard = null;
+
+function setBadge(el, text, kind){
+  el.textContent = text;
+  el.classList.remove("good","warn","bad");
+  if(kind) el.classList.add(kind);
+}
+function kindForState(state){
+  if(state === "TRADE_AVAILABLE") return "good";
+  if(state === "BLOCKED") return "bad";
+  return "warn";
+}
+function kindForTrend(dir){
+  if(dir === "UP") return "good";
+  if(dir === "DOWN") return "bad";
+  return "warn";
+}
+function renderWhy(why){
+  const list = document.getElementById("whyList");
+  list.innerHTML = "";
+  const items = Array.isArray(why) && why.length ? why : ["No details provided."];
+  for(const t of items){
+    const li = document.createElement("li");
+    li.textContent = t;
+    list.appendChild(li);
+  }
+  document.getElementById("whyCount").textContent = String(items.length);
+}
+function showLevels(levels){
+  const box = document.getElementById("levelsBox");
+  if(!levels){ box.style.display = "none"; return; }
+  box.style.display = "block";
+
+  document.getElementById("levelsDir").textContent = levels.dir || "—";
+  document.getElementById("lvlEntry").textContent = levels.entry ?? "—";
+  document.getElementById("lvlStop").textContent  = levels.stop ?? "—";
+  document.getElementById("lvlTP1").textContent   = levels.tp1 ?? "—";
+  document.getElementById("lvlTP2").textContent   = levels.tp2 ?? "—";
+
+  const entry = Number(levels.entry);
+  const stop = Number(levels.stop);
+  const dist = (Number.isFinite(entry) && Number.isFinite(stop)) ? Math.abs(entry - stop) : null;
+  document.getElementById("lvlRiskNote").textContent = dist ? ("Stop distance: " + dist.toFixed(2)) : "—";
+}
+
+async function copyLevels(){
+  if(!lastCard?.levels){
+    alert("No levels to copy yet.");
+    return;
+  }
+  const c = lastCard;
+  const L = c.levels;
+
+  const text =
+`GUARDIAN TRADE CARD
+Symbol: ${c.symbol}
+Direction: ${L.dir}
+Entry: ${L.entry}
+Stop: ${L.stop}
+TP1: ${L.tp1} (30%)
+TP2: ${L.tp2} (30%)
+Runner: 40%
+Reason: ${c.reason}`;
+
+  try{
+    await navigator.clipboard.writeText(text);
+    alert("Copied levels to clipboard.");
+  }catch{
+    prompt("Copy this:", text);
+  }
+}
+
+async function run(){
+  const symbol = document.getElementById("symbol").value;
+  const equity = document.getElementById("equity").value || 200;
+  const test = document.getElementById("testToggle").checked;
+
+  setBadge(document.getElementById("statusBadge"), "Fetching…", "warn");
+
+  let url = "/api/analyze?symbol=" + encodeURIComponent(symbol) + "&equity=" + encodeURIComponent(equity);
+  if(test) url += "&test=1";
+
+  const r = await fetch(url, { cache: "no-store" });
+  const j = await r.json();
+  lastCard = j;
+
+  setBadge(document.getElementById("statusBadge"), "Ready", "good");
+
+  const state = j.state || "NO_TRADE";
+  const dir = j.trend?.dir || "NONE";
+
+  setBadge(document.getElementById("stateBadge"), state, kindForState(state));
+  setBadge(document.getElementById("trendBadge"), "15m: " + dir, kindForTrend(dir));
+
+  document.getElementById("kvSymbol").textContent = j.symbol || symbol;
+  document.getElementById("kvTrend").textContent = dir;
+  document.getElementById("kvReason").textContent = j.reason || "—";
+  document.getElementById("kvAction").textContent =
+    state === "TRADE_AVAILABLE" ? "Trade allowed" :
+    state === "BLOCKED" ? "Trading blocked" :
+    "Stand down";
+
+  renderWhy(j.why);
+  showLevels(j.levels);
+  document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
+}
+
+run();
+</script>
 </body>
 </html>

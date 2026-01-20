@@ -27,38 +27,38 @@ export default async function handler(req, res) {
     );
   }
 
-  function round(n) {
+  function round(n, d = 2) {
     if (!Number.isFinite(n)) return n;
-    return Math.round(n * 100) / 100;
+    const p = 10 ** d;
+    return Math.round(n * p) / p;
+  }
+
+  function qtyDecimalsForSymbol(sym) {
+    // Futures qty rules vary per exchange, but for UI clarity:
+    // BTC: 4 decimals, ETH: 3 decimals (simple + readable)
+    return sym === "BTCUSDT" ? 4 : 3;
   }
 
   function computePosition({ equity, riskPercent, entry, stop }) {
-    const riskUSD = equity * riskPercent; // dollars you're willing to lose
+    const riskUSD = equity * riskPercent;
     const stopDistance = Math.abs(entry - stop);
-    if (!(stopDistance > 0)) return null;
+    if (!(stopDistance > 0) || !(entry > 0)) return null;
 
-    // Simple MVP sizing:
-    // If you use a 1x "spot-like" position, PnL per $1 notional moves ~ (price move / entry).
-    // So loss fraction at stop ≈ stopDistance / entry.
-    // Notional * (stopDistance/entry) ≈ riskUSD  => notional ≈ riskUSD * entry / stopDistance
     const lossFrac = stopDistance / entry;
     const notionalUSD = riskUSD / lossFrac;
+    const qtyApproxRaw = notionalUSD / entry;
 
-    const qtyApprox = notionalUSD / entry;
-
-    // Optional hint only (not advice): if notional > equity, you’ll need leverage/margin.
     let leverageHint = "1x";
     if (notionalUSD > equity) {
-      const lev = notionalUSD / equity;
-      leverageHint = `${round(lev)}x (approx)`;
+      leverageHint = `${round(notionalUSD / equity, 2)}x (approx)`;
     }
 
     return {
-      riskUSD: round(riskUSD),
-      stopDistance: round(stopDistance),
-      lossFrac: round(lossFrac),
-      notionalUSD: round(notionalUSD),
-      qtyApprox: round(qtyApprox),
+      riskUSD: round(riskUSD, 2),
+      stopDistance: round(stopDistance, 2),
+      lossFrac: round(lossFrac, 4),
+      notionalUSD: round(notionalUSD, 2),
+      qtyApprox: round(qtyApproxRaw, qtyDecimalsForSymbol(symbol)),
       leverageHint
     };
   }
@@ -86,17 +86,17 @@ export default async function handler(req, res) {
         reason: "TEST MODE: Forced levels for UI verification.",
         levels: {
           dir: "SHORT",
-          entry: round(entry),
-          stop: round(stop),
-          tp1: round(tp1),
-          tp2: round(tp2),
+          entry: round(entry, 2),
+          stop: round(stop, 2),
+          tp1: round(tp1, 2),
+          tp2: round(tp2, 2),
           partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
         },
         position,
         why: [
           "✔ TEST MODE enabled",
           "✔ Returning forced TRADE_AVAILABLE",
-          "✔ Includes position sizing (risk dollars)",
+          "✔ Qty precision improved (BTC/ETH)",
           "✱ Remove test=1 for real mode"
         ]
       })
@@ -154,7 +154,6 @@ export default async function handler(req, res) {
 
   // ---------- Engine ----------
   try {
-    // 1) Trend on 15m
     const c15 = await fetchCandles("15", 220);
     const s15 = findSwings(c15, 2);
 
@@ -206,7 +205,6 @@ export default async function handler(req, res) {
       );
     }
 
-    // 2) Setup on 5m
     const c5 = await fetchCandles("5", 300);
     const s5 = findSwings(c5, 2);
     const lastCandle = c5[c5.length - 1];
@@ -224,213 +222,139 @@ export default async function handler(req, res) {
     }
 
     if (trendDir === "UP") {
+      // (same as before — unchanged logic)
       const pullbackLow = s5.swingLows[s5.swingLows.length - 1];
       const reclaimCandidates = s5.swingHighs.filter((x) => x.i < pullbackLow.i);
-
       if (reclaimCandidates.length === 0) {
-        return res.status(200).end(
-          JSON.stringify({
-            ...base,
-            trend: { tf: "15m", dir: trendDir },
-            state: "NO_TRADE",
-            reason: "No valid reclaim level found on 5m.",
-            why: [...trendWhy, "✖ Need a swing high before the pullback low"]
-          })
-        );
+        return res.status(200).end(JSON.stringify({ ...base, trend:{tf:"15m",dir:trendDir}, state:"NO_TRADE", reason:"No valid reclaim level found on 5m.", why:[...trendWhy,"✖ Need a swing high before the pullback low"] }));
       }
-
       const reclaim = reclaimCandidates[reclaimCandidates.length - 1];
       const protectedLows = s5.swingLows.filter((x) => x.i < reclaim.i);
       const protectedLow = protectedLows.length ? protectedLows[protectedLows.length - 1] : null;
-
       if (protectedLow && pullbackLow.price <= protectedLow.price) {
-        return res.status(200).end(
-          JSON.stringify({
-            ...base,
-            trend: { tf: "15m", dir: trendDir },
-            state: "NO_TRADE",
-            reason: `Pullback invalid: broke protected low (${round(protectedLow.price)}).`,
-            why: [...trendWhy, `✖ Pullback low ${round(pullbackLow.price)} <= protected low ${round(protectedLow.price)}`]
-          })
-        );
+        return res.status(200).end(JSON.stringify({ ...base, trend:{tf:"15m",dir:trendDir}, state:"NO_TRADE", reason:`Pullback invalid: broke protected low (${round(protectedLow.price)}).`, why:[...trendWhy,`✖ Pullback low ${round(pullbackLow.price)} <= protected low ${round(protectedLow.price)}`] }));
       }
-
       const triggered = lastCandle.close > reclaim.price;
-
       if (!triggered) {
-        return res.status(200).end(
-          JSON.stringify({
-            ...base,
-            trend: { tf: "15m", dir: trendDir },
-            state: "NO_TRADE",
-            reason: `Waiting for reclaim close: 5m close (${round(lastCandle.close)}) must be > reclaim (${round(reclaim.price)}).`,
-            why: [
-              ...trendWhy,
-              "✔ 5m pullback detected",
-              protectedLow ? `✔ Protected low held (${round(protectedLow.price)})` : "✔ No protected low check",
-              `⏳ Waiting: 5m close > reclaim (${round(reclaim.price)})`
-            ]
-          })
-        );
+        return res.status(200).end(JSON.stringify({ ...base, trend:{tf:"15m",dir:trendDir}, state:"NO_TRADE", reason:`Waiting for reclaim close: 5m close (${round(lastCandle.close)}) must be > reclaim (${round(reclaim.price)}).`, why:[...trendWhy,"✔ 5m pullback detected", protectedLow ? `✔ Protected low held (${round(protectedLow.price)})` : "✔ No protected low check", `⏳ Waiting: 5m close > reclaim (${round(reclaim.price)})`] }));
       }
-
       const entry = lastCandle.close;
       const stop = pullbackLow.price;
       const R = entry - stop;
-
       if (!(R > 0)) {
-        return res.status(200).end(
-          JSON.stringify({
-            ...base,
-            trend: { tf: "15m", dir: trendDir },
-            state: "NO_TRADE",
-            reason: "Invalid risk distance (entry <= stop).",
-            why: [...trendWhy, `✖ Entry ${round(entry)} <= stop ${round(stop)}`]
-          })
-        );
+        return res.status(200).end(JSON.stringify({ ...base, trend:{tf:"15m",dir:trendDir}, state:"NO_TRADE", reason:"Invalid risk distance (entry <= stop).", why:[...trendWhy,`✖ Entry ${round(entry)} <= stop ${round(stop)}`] }));
       }
-
       const tp1 = entry + 0.5 * R;
       const tp2 = entry + 1.0 * R;
 
-      const levels = {
-        dir: "LONG",
-        entry: round(entry),
-        stop: round(stop),
-        tp1: round(tp1),
-        tp2: round(tp2),
-        partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
-      };
+      const levels = { dir:"LONG", entry:round(entry), stop:round(stop), tp1:round(tp1), tp2:round(tp2), partials:{tp1Pct:.30,tp2Pct:.30,runnerPct:.40} };
+      const position = computePosition({ equity, riskPercent: base.risk.riskPercent, entry: levels.entry, stop: levels.stop });
 
-      const position = computePosition({
-        equity,
-        riskPercent: base.risk.riskPercent,
-        entry: levels.entry,
-        stop: levels.stop
-      });
+      return res.status(200).end(JSON.stringify({ ...base, trend:{tf:"15m",dir:trendDir}, state:"TRADE_AVAILABLE", reason:`LONG available: 15m UP + 5m reclaim close above ${round(reclaim.price)}.`, levels, position, why:[...trendWhy,"✔ 5m pullback valid",`✔ Reclaim close confirmed (> ${round(reclaim.price)})`,`✔ Risk: ~$${position?.riskUSD ?? "?"} (size auto-calc)`] }));
+    }
 
+    // DOWN (same as before)
+    const pullbackHigh = s5.swingHighs[s5.swingHighs.length - 1];
+    const reclaimCandidates = s5.swingLows.filter((x) => x.i < pullbackHigh.i);
+
+    if (reclaimCandidates.length === 0) {
       return res.status(200).end(
         JSON.stringify({
           ...base,
           trend: { tf: "15m", dir: trendDir },
-          state: "TRADE_AVAILABLE",
-          reason: `LONG available: 15m UP + 5m reclaim close above ${round(reclaim.price)}.`,
-          levels,
-          position,
+          state: "NO_TRADE",
+          reason: "No valid reclaim level found on 5m.",
+          why: [...trendWhy, "✖ Need a swing low before the pullback high"]
+        })
+      );
+    }
+
+    const reclaim = reclaimCandidates[reclaimCandidates.length - 1];
+    const protectedHighs = s5.swingHighs.filter((x) => x.i < reclaim.i);
+    const protectedHigh = protectedHighs.length ? protectedHighs[protectedHighs.length - 1] : null;
+
+    if (protectedHigh && pullbackHigh.price >= protectedHigh.price) {
+      return res.status(200).end(
+        JSON.stringify({
+          ...base,
+          trend: { tf: "15m", dir: trendDir },
+          state: "NO_TRADE",
+          reason: `Pullback invalid: broke protected high (${round(protectedHigh.price)}).`,
+          why: [...trendWhy, `✖ Pullback high ${round(pullbackHigh.price)} >= protected high ${round(protectedHigh.price)}`]
+        })
+      );
+    }
+
+    const triggered = lastCandle.close < reclaim.price;
+
+    if (!triggered) {
+      return res.status(200).end(
+        JSON.stringify({
+          ...base,
+          trend: { tf: "15m", dir: trendDir },
+          state: "NO_TRADE",
+          reason: `Waiting for reclaim close: 5m close (${round(lastCandle.close)}) must be < reclaim (${round(reclaim.price)}).`,
           why: [
             ...trendWhy,
-            "✔ 5m pullback valid",
-            `✔ Reclaim close confirmed (> ${round(reclaim.price)})`,
-            `✔ Risk: ~$${position?.riskUSD ?? "?"} (size auto-calc)`
+            "✔ 5m pullback detected",
+            protectedHigh ? `✔ Protected high held (${round(protectedHigh.price)})` : "✔ No protected high check",
+            `⏳ Waiting: 5m close < reclaim (${round(reclaim.price)})`
           ]
         })
       );
     }
 
-    // trendDir === "DOWN"
-    {
-      const pullbackHigh = s5.swingHighs[s5.swingHighs.length - 1];
-      const reclaimCandidates = s5.swingLows.filter((x) => x.i < pullbackHigh.i);
+    const entry = lastCandle.close;
+    const stop = pullbackHigh.price;
+    const R = stop - entry;
 
-      if (reclaimCandidates.length === 0) {
-        return res.status(200).end(
-          JSON.stringify({
-            ...base,
-            trend: { tf: "15m", dir: trendDir },
-            state: "NO_TRADE",
-            reason: "No valid reclaim level found on 5m.",
-            why: [...trendWhy, "✖ Need a swing low before the pullback high"]
-          })
-        );
-      }
-
-      const reclaim = reclaimCandidates[reclaimCandidates.length - 1];
-      const protectedHighs = s5.swingHighs.filter((x) => x.i < reclaim.i);
-      const protectedHigh = protectedHighs.length ? protectedHighs[protectedHighs.length - 1] : null;
-
-      if (protectedHigh && pullbackHigh.price >= protectedHigh.price) {
-        return res.status(200).end(
-          JSON.stringify({
-            ...base,
-            trend: { tf: "15m", dir: trendDir },
-            state: "NO_TRADE",
-            reason: `Pullback invalid: broke protected high (${round(protectedHigh.price)}).`,
-            why: [...trendWhy, `✖ Pullback high ${round(pullbackHigh.price)} >= protected high ${round(protectedHigh.price)}`]
-          })
-        );
-      }
-
-      const triggered = lastCandle.close < reclaim.price;
-
-      if (!triggered) {
-        return res.status(200).end(
-          JSON.stringify({
-            ...base,
-            trend: { tf: "15m", dir: trendDir },
-            state: "NO_TRADE",
-            reason: `Waiting for reclaim close: 5m close (${round(lastCandle.close)}) must be < reclaim (${round(reclaim.price)}).`,
-            why: [
-              ...trendWhy,
-              "✔ 5m pullback detected",
-              protectedHigh ? `✔ Protected high held (${round(protectedHigh.price)})` : "✔ No protected high check",
-              `⏳ Waiting: 5m close < reclaim (${round(reclaim.price)})`
-            ]
-          })
-        );
-      }
-
-      const entry = lastCandle.close;
-      const stop = pullbackHigh.price;
-      const R = stop - entry;
-
-      if (!(R > 0)) {
-        return res.status(200).end(
-          JSON.stringify({
-            ...base,
-            trend: { tf: "15m", dir: trendDir },
-            state: "NO_TRADE",
-            reason: "Invalid risk distance (stop <= entry).",
-            why: [...trendWhy, `✖ Stop ${round(stop)} <= entry ${round(entry)}`]
-          })
-        );
-      }
-
-      const tp1 = entry - 0.5 * R;
-      const tp2 = entry - 1.0 * R;
-
-      const levels = {
-        dir: "SHORT",
-        entry: round(entry),
-        stop: round(stop),
-        tp1: round(tp1),
-        tp2: round(tp2),
-        partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
-      };
-
-      const position = computePosition({
-        equity,
-        riskPercent: base.risk.riskPercent,
-        entry: levels.entry,
-        stop: levels.stop
-      });
-
+    if (!(R > 0)) {
       return res.status(200).end(
         JSON.stringify({
           ...base,
           trend: { tf: "15m", dir: trendDir },
-          state: "TRADE_AVAILABLE",
-          reason: `SHORT available: 15m DOWN + 5m reclaim close below ${round(reclaim.price)}.`,
-          levels,
-          position,
-          why: [
-            ...trendWhy,
-            "✔ 5m pullback valid",
-            `✔ Reclaim close confirmed (< ${round(reclaim.price)})`,
-            `✔ Risk: ~$${position?.riskUSD ?? "?"} (size auto-calc)`
-          ]
+          state: "NO_TRADE",
+          reason: "Invalid risk distance (stop <= entry).",
+          why: [...trendWhy, `✖ Stop ${round(stop)} <= entry ${round(entry)}`]
         })
       );
     }
+
+    const tp1 = entry - 0.5 * R;
+    const tp2 = entry - 1.0 * R;
+
+    const levels = {
+      dir: "SHORT",
+      entry: round(entry),
+      stop: round(stop),
+      tp1: round(tp1),
+      tp2: round(tp2),
+      partials: { tp1Pct: 0.30, tp2Pct: 0.30, runnerPct: 0.40 }
+    };
+
+    const position = computePosition({
+      equity,
+      riskPercent: base.risk.riskPercent,
+      entry: levels.entry,
+      stop: levels.stop
+    });
+
+    return res.status(200).end(
+      JSON.stringify({
+        ...base,
+        trend: { tf: "15m", dir: trendDir },
+        state: "TRADE_AVAILABLE",
+        reason: `SHORT available: 15m DOWN + 5m reclaim close below ${round(reclaim.price)}.`,
+        levels,
+        position,
+        why: [
+          ...trendWhy,
+          "✔ 5m pullback valid",
+          `✔ Reclaim close confirmed (< ${round(reclaim.price)})`,
+          `✔ Risk: ~$${position?.riskUSD ?? "?"} (size auto-calc)`
+        ]
+      })
+    );
   } catch (e) {
     return res.status(200).end(
       JSON.stringify({

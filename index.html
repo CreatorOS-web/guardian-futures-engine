@@ -79,6 +79,8 @@
       font-family: inherit;
     }
     input{width:150px}
+    .tiny{width:120px}
+
     button{
       padding:10px 14px;
       border-radius:12px;
@@ -91,8 +93,18 @@
       font-family: inherit;
     }
     button:hover{background: rgba(255,255,255,.14)}
+    button:active{transform: translateY(1px)}
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none;
+    }
     .btnPrimary{background: rgba(37,99,235,.35); border-color: rgba(37,99,235,.55);}
     .btnPrimary:hover{background: rgba(37,99,235,.45);}
+    .btnDanger{background: rgba(255,92,122,.18); border-color: rgba(255,92,122,.40);}
+    .btnDanger:hover{background: rgba(255,92,122,.24);}
+    .btnGood{background: rgba(36,209,138,.16); border-color: rgba(36,209,138,.40);}
+    .btnGood:hover{background: rgba(36,209,138,.22);}
 
     .toggle{
       display:flex;align-items:center;gap:8px;
@@ -116,7 +128,7 @@
     .kv .k{font-size:12px;color:var(--muted);margin-bottom:6px}
     .kv .v{font-size:16px;font-weight:800;letter-spacing:.15px}
 
-    .whyBox, .levelsBox, .posBox, .ordersBox{
+    .box{
       margin-top:14px;
       padding:12px;border-radius:14px;background: rgba(0,0,0,.16);
       border:1px solid var(--border);
@@ -125,21 +137,19 @@
       display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;
     }
     .boxHead h3{margin:0;font-size:13px;color:var(--muted);font-weight:900;letter-spacing:.2px}
-    .whyList{margin:0;padding-left:18px}
-    .whyList li{margin:7px 0;color:rgba(238,242,255,.78);line-height:1.4}
 
-    .levelsGrid, .posGrid, .ordersGrid{
-      display:grid; grid-template-columns: 1fr 1fr; gap:10px;
-    }
-    @media (max-width: 640px){ .levelsGrid, .posGrid, .ordersGrid{grid-template-columns:1fr} }
-
-    .lvl, .pos, .ord{
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    @media (max-width: 640px){ .grid2{grid-template-columns:1fr} }
+    .cell{
       padding:12px;border-radius:14px;background: rgba(0,0,0,.18);
       border:1px solid var(--border);
     }
-    .lvl .k, .pos .k, .ord .k{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .lvl .v, .pos .v, .ord .v{font-size:16px;font-weight:900}
-    .lvl .s, .pos .s, .ord .s{font-size:12px;color:rgba(238,242,255,.72);margin-top:6px}
+    .cell .k{font-size:12px;color:var(--muted);margin-bottom:6px}
+    .cell .v{font-size:16px;font-weight:900}
+    .cell .s{font-size:12px;color:rgba(238,242,255,.72);margin-top:6px}
+
+    .whyList{margin:0;padding-left:18px}
+    .whyList li{margin:7px 0;color:rgba(238,242,255,.78);line-height:1.4}
 
     .mono{
       margin-top:14px;
@@ -150,6 +160,7 @@
       overflow:auto; max-height:260px;
       white-space:pre;
     }
+
     .notes{
       margin-top:10px;
       padding:12px;border-radius:14px;background: rgba(0,0,0,.22);
@@ -173,7 +184,8 @@
           <span class="chip">Vercel Hosted</span>
           <span class="chip">15m Structure + 5m Trigger</span>
           <span class="chip">Partials 30/30/40</span>
-          <span class="chip">Position + Orders</span>
+          <span class="chip">Sizing + Orders</span>
+          <span class="chip">Trade Guard</span>
         </div>
       </div>
       <div class="badge" id="statusBadge">Idle</div>
@@ -197,11 +209,54 @@
               <input id="testToggle" type="checkbox" />
               <span>Test</span><small>mode</small>
             </label>
-            <button class="btnPrimary" onclick="run()">Analyze</button>
+            <button class="btnPrimary" id="analyzeBtn" onclick="run()">Analyze</button>
           </div>
         </div>
 
         <div class="cardBody">
+
+          <!-- TRADE GUARD -->
+          <div class="box" id="guardBox">
+            <div class="boxHead">
+              <h3>Trade Guard</h3>
+              <div class="badge" id="guardBadge">—</div>
+            </div>
+
+            <div class="grid2">
+              <div class="cell">
+                <div class="k">Max trades per day</div>
+                <div class="v">
+                  <input class="tiny" id="maxTrades" type="number" min="1" step="1" value="3" />
+                </div>
+                <div class="s">Stops overtrading.</div>
+              </div>
+
+              <div class="cell">
+                <div class="k">Cooldown (minutes)</div>
+                <div class="v">
+                  <input class="tiny" id="cooldownMin" type="number" min="0" step="1" value="15" />
+                </div>
+                <div class="s">Prevents revenge entries.</div>
+              </div>
+
+              <div class="cell">
+                <div class="k">Today</div>
+                <div class="v" id="guardToday">—</div>
+                <div class="s" id="guardTimeLeft">—</div>
+              </div>
+
+              <div class="cell">
+                <div class="k">Controls</div>
+                <div class="v" style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <button class="btnGood" onclick="markTradeTaken()">Mark Trade Taken</button>
+                  <button class="btnDanger" onclick="resetGuard()">Reset Today</button>
+                </div>
+                <div class="s">Mark after you place a trade.</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUMMARY -->
           <div class="kvs">
             <div class="kv"><div class="k">Symbol</div><div class="v" id="kvSymbol">—</div></div>
             <div class="kv"><div class="k">Trend</div><div class="v" id="kvTrend">—</div></div>
@@ -209,7 +264,8 @@
             <div class="kv"><div class="k">Reason</div><div class="v" id="kvReason">—</div></div>
           </div>
 
-          <div class="levelsBox" id="levelsBox" style="display:none;">
+          <!-- LEVELS -->
+          <div class="box" id="levelsBox" style="display:none;">
             <div class="boxHead">
               <h3>Levels</h3>
               <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -217,27 +273,29 @@
                 <button onclick="copyLevels()">Copy Levels</button>
               </div>
             </div>
-            <div class="levelsGrid">
-              <div class="lvl"><div class="k">Entry</div><div class="v" id="lvlEntry">—</div><div class="s">Trigger: reclaim close</div></div>
-              <div class="lvl"><div class="k">Stop</div><div class="v" id="lvlStop">—</div><div class="s" id="lvlRiskNote">—</div></div>
-              <div class="lvl"><div class="k">TP1 (30%)</div><div class="v" id="lvlTP1">—</div><div class="s">Close 30%</div></div>
-              <div class="lvl"><div class="k">TP2 (30%)</div><div class="v" id="lvlTP2">—</div><div class="s">Close 30%</div></div>
-              <div class="lvl" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
+            <div class="grid2">
+              <div class="cell"><div class="k">Entry</div><div class="v" id="lvlEntry">—</div><div class="s">Trigger: reclaim close</div></div>
+              <div class="cell"><div class="k">Stop</div><div class="v" id="lvlStop">—</div><div class="s" id="lvlRiskNote">—</div></div>
+              <div class="cell"><div class="k">TP1 (30%)</div><div class="v" id="lvlTP1">—</div><div class="s">Close 30%</div></div>
+              <div class="cell"><div class="k">TP2 (30%)</div><div class="v" id="lvlTP2">—</div><div class="s">Close 30%</div></div>
+              <div class="cell" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
             </div>
           </div>
 
-          <div class="posBox" id="posBox" style="display:none;">
+          <!-- POSITION -->
+          <div class="box" id="posBox" style="display:none;">
             <div class="boxHead"><h3>Position</h3><div class="badge">Sizing</div></div>
-            <div class="posGrid">
-              <div class="pos"><div class="k">Risk (USD)</div><div class="v" id="posRisk">—</div><div class="s">Max loss if stop hits</div></div>
-              <div class="pos"><div class="k">Notional (USD)</div><div class="v" id="posNotional">—</div><div class="s">Suggested size</div></div>
-              <div class="pos"><div class="k">Qty (approx)</div><div class="v" id="posQty">—</div><div class="s">Notional / Entry</div></div>
-              <div class="pos"><div class="k">Leverage hint</div><div class="v" id="posLev">—</div><div class="s">Only if notional > equity</div></div>
-              <div class="pos" style="grid-column:1/-1;"><div class="k">Stop distance</div><div class="v" id="posStopDist">—</div><div class="s">Absolute entry↔stop</div></div>
+            <div class="grid2">
+              <div class="cell"><div class="k">Risk (USD)</div><div class="v" id="posRisk">—</div><div class="s">Max loss if stop hits</div></div>
+              <div class="cell"><div class="k">Notional (USD)</div><div class="v" id="posNotional">—</div><div class="s">Suggested size</div></div>
+              <div class="cell"><div class="k">Qty (approx)</div><div class="v" id="posQty">—</div><div class="s">Notional / Entry</div></div>
+              <div class="cell"><div class="k">Leverage hint</div><div class="v" id="posLev">—</div><div class="s">Only if notional > equity</div></div>
+              <div class="cell" style="grid-column:1/-1;"><div class="k">Stop distance</div><div class="v" id="posStopDist">—</div><div class="s">Absolute entry↔stop</div></div>
             </div>
           </div>
 
-          <div class="ordersBox" id="ordersBox" style="display:none;">
+          <!-- ORDERS -->
+          <div class="box" id="ordersBox" style="display:none;">
             <div class="boxHead">
               <h3>Orders</h3>
               <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
@@ -246,18 +304,19 @@
               </div>
             </div>
 
-            <div class="ordersGrid">
-              <div class="ord"><div class="k">Entry</div><div class="v" id="ordEntry">—</div><div class="s" id="ordEntryS">—</div></div>
-              <div class="ord"><div class="k">Stop Loss</div><div class="v" id="ordSL">—</div><div class="s" id="ordSLS">—</div></div>
-              <div class="ord"><div class="k">TP1 (30%)</div><div class="v" id="ordTP1">—</div><div class="s">Close 30%</div></div>
-              <div class="ord"><div class="k">TP2 (30%)</div><div class="v" id="ordTP2">—</div><div class="s">Close 30%</div></div>
-              <div class="ord" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
+            <div class="grid2">
+              <div class="cell"><div class="k">Entry</div><div class="v" id="ordEntry">—</div><div class="s" id="ordEntryS">—</div></div>
+              <div class="cell"><div class="k">Stop Loss</div><div class="v" id="ordSL">—</div><div class="s" id="ordSLS">—</div></div>
+              <div class="cell"><div class="k">TP1 (30%)</div><div class="v" id="ordTP1">—</div><div class="s">Close 30%</div></div>
+              <div class="cell"><div class="k">TP2 (30%)</div><div class="v" id="ordTP2">—</div><div class="s">Close 30%</div></div>
+              <div class="cell" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
             </div>
 
             <div class="notes" id="ordersNotes" style="display:none;"></div>
           </div>
 
-          <div class="whyBox">
+          <!-- WHY -->
+          <div class="box">
             <div class="boxHead"><h3>Why</h3><div class="badge" id="whyCount">0</div></div>
             <ul class="whyList" id="whyList"><li>Click Analyze to load a Trade Card.</li></ul>
           </div>
@@ -273,8 +332,9 @@
         <div class="cardBody">
           <div class="sideNote">
             <p><strong>1)</strong> Analyze → wait for <strong>TRADE_AVAILABLE</strong>.</p>
-            <p><strong>2)</strong> Use <strong>Orders</strong> as your Bybit checklist (SL/TP clarity).</p>
-            <p><strong>3)</strong> Sizing caps risk — protect-from-yourself.</p>
+            <p><strong>2)</strong> Place trade on your exchange.</p>
+            <p><strong>3)</strong> Click <strong>Mark Trade Taken</strong> to enforce cooldown + max/day.</p>
+            <p><strong>4)</strong> If blocked: good. That’s Guardian doing its job.</p>
           </div>
         </div>
       </div>
@@ -306,6 +366,101 @@ function escapeHtml(str){
     .replaceAll(">","&gt;")
     .replaceAll('"',"&quot;")
     .replaceAll("'","&#039;");
+}
+
+function todayKey(){
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function guardKey(){
+  return `guardian:guard:${todayKey()}`;
+}
+function loadGuard(){
+  const raw = localStorage.getItem(guardKey());
+  if(!raw) return { tradesTaken: 0, lastTradeTs: 0 };
+  try {
+    const j = JSON.parse(raw);
+    return {
+      tradesTaken: Number(j.tradesTaken || 0),
+      lastTradeTs: Number(j.lastTradeTs || 0)
+    };
+  } catch {
+    return { tradesTaken: 0, lastTradeTs: 0 };
+  }
+}
+function saveGuard(g){
+  localStorage.setItem(guardKey(), JSON.stringify(g));
+}
+
+function getSettings(){
+  const maxTrades = Math.max(1, Number(document.getElementById("maxTrades").value || 3));
+  const cooldownMin = Math.max(0, Number(document.getElementById("cooldownMin").value || 15));
+  return { maxTrades, cooldownMin };
+}
+
+function guardStatus(){
+  const { maxTrades, cooldownMin } = getSettings();
+  const g = loadGuard();
+  const now = Date.now();
+  const cooldownMs = cooldownMin * 60 * 1000;
+  const elapsed = now - g.lastTradeTs;
+  const coolingDown = g.lastTradeTs > 0 && elapsed < cooldownMs;
+
+  const timeLeftMs = coolingDown ? (cooldownMs - elapsed) : 0;
+  const timeLeftMin = Math.ceil(timeLeftMs / 60000);
+
+  const maxed = g.tradesTaken >= maxTrades;
+
+  return { ...g, maxTrades, cooldownMin, coolingDown, timeLeftMin, maxed };
+}
+
+function renderGuard(){
+  const s = guardStatus();
+  document.getElementById("guardToday").textContent = `${s.tradesTaken}/${s.maxTrades} trades taken`;
+
+  const timeLeftEl = document.getElementById("guardTimeLeft");
+  if(s.maxed){
+    timeLeftEl.textContent = "Blocked: max trades reached for today.";
+  } else if(s.coolingDown){
+    timeLeftEl.textContent = `Cooldown: ${s.timeLeftMin} min left.`;
+  } else {
+    timeLeftEl.textContent = "Clear: you can trade if signal appears.";
+  }
+
+  const analyzeBtn = document.getElementById("analyzeBtn");
+  if(s.maxed){
+    setBadge(document.getElementById("guardBadge"), "BLOCKED (MAX)", "bad");
+    analyzeBtn.disabled = true;
+  } else if(s.coolingDown){
+    setBadge(document.getElementById("guardBadge"), "BLOCKED (COOLDOWN)", "warn");
+    analyzeBtn.disabled = true;
+  } else {
+    setBadge(document.getElementById("guardBadge"), "ACTIVE", "good");
+    analyzeBtn.disabled = false;
+  }
+}
+
+function markTradeTaken(){
+  const s = guardStatus();
+  if(s.maxed){
+    alert("Max trades already reached for today.");
+    return;
+  }
+  const g = loadGuard();
+  g.tradesTaken = (g.tradesTaken || 0) + 1;
+  g.lastTradeTs = Date.now();
+  saveGuard(g);
+  renderGuard();
+  alert("Trade marked. Cooldown started.");
+}
+
+function resetGuard(){
+  localStorage.removeItem(guardKey());
+  renderGuard();
+  alert("Trade Guard reset for today.");
 }
 
 function renderWhy(why){
@@ -354,7 +509,6 @@ function showOrders(orders){
   box.style.display = "block";
 
   document.getElementById("ordersSide").textContent = `${orders.entrySide} • ${orders.entryType}`;
-
   document.getElementById("ordEntry").textContent = orders.entryPrice ?? "—";
   document.getElementById("ordEntryS").textContent = `Qty ≈ ${orders.qtyApprox} • ~$${orders.notionalUSD} notional`;
 
@@ -426,6 +580,17 @@ Notes:
 }
 
 async function run(){
+  renderGuard();
+  const g = guardStatus();
+  if(g.maxed){
+    alert("Trade Guard blocked: max trades reached today.");
+    return;
+  }
+  if(g.coolingDown){
+    alert(`Trade Guard blocked: cooldown active (${g.timeLeftMin} min left).`);
+    return;
+  }
+
   const symbol = document.getElementById("symbol").value;
   const equity = document.getElementById("equity").value || 200;
   const test = document.getElementById("testToggle").checked;
@@ -462,6 +627,10 @@ async function run(){
   document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
 }
 
+document.getElementById("maxTrades").addEventListener("change", renderGuard);
+document.getElementById("cooldownMin").addEventListener("change", renderGuard);
+
+renderGuard();
 run();
 </script>
 </body>

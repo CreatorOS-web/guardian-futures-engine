@@ -34,15 +34,15 @@
       color:var(--text);
       padding:28px;
     }
-    .wrap{max-width:1040px;margin:0 auto}
+    .wrap{max-width:1100px;margin:0 auto}
     .top{display:flex; gap:14px; align-items:flex-start; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap;}
     h1{font-size:22px;margin:0 0 6px 0;letter-spacing:.2px}
-    .sub{color:var(--muted);font-size:13px;line-height:1.5;max-width:720px}
+    .sub{color:var(--muted);font-size:13px;line-height:1.5;max-width:760px}
     .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
     .chip{font-size:12px;padding:6px 10px;border-radius:999px;background:var(--chip);border:1px solid var(--border);color:rgba(238,242,255,.78)}
 
-    .grid{display:grid;grid-template-columns: 1.25fr .75fr;gap:14px}
-    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+    .grid{display:grid;grid-template-columns: 1.35fr .65fr;gap:14px}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
 
     .card{
       background: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.03));
@@ -80,6 +80,7 @@
     }
     input{width:150px}
     .tiny{width:120px}
+    .wide{min-width:190px}
 
     button{
       padding:10px 14px;
@@ -88,7 +89,7 @@
       background: rgba(255,255,255,.10);
       color:var(--text);
       cursor:pointer;
-      font-weight:800;
+      font-weight:900;
       letter-spacing:.2px;
       font-family: inherit;
     }
@@ -110,24 +111,37 @@
       font-size:13px; user-select:none;
     }
     .toggle input{width:auto}
-    .toggle span{font-weight:800}
-    .toggle small{color:var(--muted); font-weight:700}
+    .toggle span{font-weight:900}
+    .toggle small{color:var(--muted); font-weight:800}
 
     .cardBody{padding:16px}
     .kvs{display:grid;grid-template-columns: 1fr 1fr;gap:10px;margin-top:14px}
-    @media (max-width: 640px){ .kvs{grid-template-columns:1fr} }
+    @media (max-width: 680px){ .kvs{grid-template-columns:1fr} }
 
-    .kv{padding:12px;border-radius:14px;background: rgba(0,0,0,.16);border:1px solid var(--border);}
+    .kv{
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.16);
+      border:1px solid var(--border);
+    }
     .kv .k{font-size:12px;color:var(--muted);margin-bottom:6px}
-    .kv .v{font-size:16px;font-weight:800;letter-spacing:.15px}
+    .kv .v{font-size:16px;font-weight:900;letter-spacing:.15px}
 
-    .box{margin-top:14px;padding:12px;border-radius:14px;background: rgba(0,0,0,.16);border:1px solid var(--border);}
-    .boxHead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;}
+    .box{
+      margin-top:14px;
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.16);
+      border:1px solid var(--border);
+    }
+    .boxHead{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;
+    }
     .boxHead h3{margin:0;font-size:13px;color:var(--muted);font-weight:900;letter-spacing:.2px}
 
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    @media (max-width: 640px){ .grid2{grid-template-columns:1fr} }
-    .cell{padding:12px;border-radius:14px;background: rgba(0,0,0,.18);border:1px solid var(--border);}
+    @media (max-width: 680px){ .grid2{grid-template-columns:1fr} }
+
+    .cell{
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.18);
+      border:1px solid var(--border);
+    }
     .cell .k{font-size:12px;color:var(--muted);margin-bottom:6px}
     .cell .v{font-size:16px;font-weight:900}
     .cell .s{font-size:12px;color:rgba(238,242,255,.72);margin-top:6px}
@@ -141,11 +155,17 @@
       border:1px solid var(--border);
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
       font-size:12px; color: rgba(238,242,255,.85);
-      overflow:auto; max-height:260px;
+      overflow:auto; max-height:280px;
       white-space:pre;
     }
 
-    .notes{margin-top:10px;padding:12px;border-radius:14px;background: rgba(0,0,0,.22);border:1px solid var(--border);color: rgba(238,242,255,.85);font-size:13px; line-height:1.45;}
+    .notes{
+      margin-top:10px;
+      padding:12px;border-radius:14px;background: rgba(0,0,0,.22);
+      border:1px solid var(--border);
+      color: rgba(238,242,255,.85);
+      font-size:13px; line-height:1.45;
+    }
     .notes ul{margin:0;padding-left:18px}
     .notes li{margin:6px 0;color:rgba(238,242,255,.78)}
     .sideNote{color:rgba(238,242,255,.76);font-size:13px;line-height:1.55}
@@ -159,9 +179,10 @@
         <h1>Guardian Futures Engine</h1>
         <div class="sub">Decision support first — disciplined signals only. (Timezone: America/Chicago)</div>
         <div class="chips">
-          <span class="chip">Trade Guard</span>
+          <span class="chip" id="universeChip">Universe: Loading…</span>
           <span class="chip">Session Filter</span>
-          <span class="chip">15m Structure + 5m Trigger</span>
+          <span class="chip">Trade Guard</span>
+          <span class="chip">Levels + Orders</span>
         </div>
       </div>
       <div class="badge" id="statusBadge">Idle</div>
@@ -176,15 +197,19 @@
             <div class="badge" id="trendBadge">15m: —</div>
           </div>
           <div class="controls">
-            <select id="symbol">
+            <select id="symbol" class="wide" title="Top 50 Bybit linear perps (dynamic)">
               <option>BTCUSDT</option>
               <option>ETHUSDT</option>
             </select>
+
+            <button id="refreshUniverseBtn" onclick="loadUniverse(true)">Refresh Top 50</button>
+
             <input id="equity" type="number" value="200" min="10" step="10" />
             <label class="toggle" title="For UI testing only (forces levels).">
               <input id="testToggle" type="checkbox" />
               <span>Test</span><small>mode</small>
             </label>
+
             <button class="btnPrimary" id="analyzeBtn" onclick="run()">Analyze</button>
           </div>
         </div>
@@ -265,6 +290,58 @@
             <div class="kv"><div class="k">Reason</div><div class="v" id="kvReason">—</div></div>
           </div>
 
+          <!-- LEVELS -->
+          <div class="box" id="levelsBox" style="display:none;">
+            <div class="boxHead">
+              <h3>Levels</h3>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <div class="badge" id="levelsDir">—</div>
+                <button onclick="copyLevels()">Copy Levels</button>
+              </div>
+            </div>
+            <div class="grid2">
+              <div class="cell"><div class="k">Entry</div><div class="v" id="lvlEntry">—</div><div class="s">Trigger: reclaim close</div></div>
+              <div class="cell"><div class="k">Stop</div><div class="v" id="lvlStop">—</div><div class="s" id="lvlRiskNote">—</div></div>
+              <div class="cell"><div class="k">TP1 (30%)</div><div class="v" id="lvlTP1">—</div><div class="s">Close 30%</div></div>
+              <div class="cell"><div class="k">TP2 (30%)</div><div class="v" id="lvlTP2">—</div><div class="s">Close 30%</div></div>
+              <div class="cell" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
+            </div>
+          </div>
+
+          <!-- POSITION -->
+          <div class="box" id="posBox" style="display:none;">
+            <div class="boxHead"><h3>Position</h3><div class="badge">Sizing</div></div>
+            <div class="grid2">
+              <div class="cell"><div class="k">Risk (USD)</div><div class="v" id="posRisk">—</div><div class="s">Max loss if stop hits</div></div>
+              <div class="cell"><div class="k">Notional (USD)</div><div class="v" id="posNotional">—</div><div class="s">Suggested size</div></div>
+              <div class="cell"><div class="k">Qty (approx)</div><div class="v" id="posQty">—</div><div class="s">Notional / Entry</div></div>
+              <div class="cell"><div class="k">Leverage hint</div><div class="v" id="posLev">—</div><div class="s">Only if notional > equity</div></div>
+              <div class="cell" style="grid-column:1/-1;"><div class="k">Stop distance</div><div class="v" id="posStopDist">—</div><div class="s">Absolute entry↔stop</div></div>
+            </div>
+          </div>
+
+          <!-- ORDERS -->
+          <div class="box" id="ordersBox" style="display:none;">
+            <div class="boxHead">
+              <h3>Orders</h3>
+              <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <div class="badge" id="ordersSide">—</div>
+                <button onclick="copyOrders()">Copy Orders</button>
+              </div>
+            </div>
+
+            <div class="grid2">
+              <div class="cell"><div class="k">Entry</div><div class="v" id="ordEntry">—</div><div class="s" id="ordEntryS">—</div></div>
+              <div class="cell"><div class="k">Stop Loss</div><div class="v" id="ordSL">—</div><div class="s" id="ordSLS">—</div></div>
+              <div class="cell"><div class="k">TP1 (30%)</div><div class="v" id="ordTP1">—</div><div class="s">Close 30%</div></div>
+              <div class="cell"><div class="k">TP2 (30%)</div><div class="v" id="ordTP2">—</div><div class="s">Close 30%</div></div>
+              <div class="cell" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
+            </div>
+
+            <div class="notes" id="ordersNotes" style="display:none;"></div>
+          </div>
+
+          <!-- WHY -->
           <div class="box">
             <div class="boxHead"><h3>Why</h3><div class="badge" id="whyCount">0</div></div>
             <ul class="whyList" id="whyList"><li>Click Analyze to load a Trade Card.</li></ul>
@@ -280,9 +357,13 @@
         </div>
         <div class="cardBody">
           <div class="sideNote">
-            <p><strong>Rule:</strong> trade only during your chosen session window.</p>
-            <p><strong>Why:</strong> it cuts low-quality chop and reduces overtrading.</p>
-            <p><strong>Default:</strong> Overlap is best.</p>
+            <p><strong>1)</strong> The symbol list auto-loads the <strong>Top 50</strong> perps from Bybit.</p>
+            <p><strong>2)</strong> Analyze → wait for <strong>TRADE_AVAILABLE</strong>.</p>
+            <p><strong>3)</strong> Place the trade manually, then click <strong>Mark Trade Taken</strong>.</p>
+            <p><strong>4)</strong> If blocked (session/cooldown/max/day), Guardian is protecting you.</p>
+            <p style="margin-top:10px;color:rgba(238,242,255,.70);font-size:12px;">
+              Tip: Use <strong>Test mode</strong> to verify the UI without waiting for real triggers.
+            </p>
           </div>
         </div>
       </div>
@@ -291,6 +372,7 @@
 
 <script>
 let lastCard = null;
+let universeLoaded = false;
 
 function setBadge(el, text, kind){
   el.textContent = text;
@@ -298,7 +380,12 @@ function setBadge(el, text, kind){
   if(kind) el.classList.add(kind);
 }
 function escapeHtml(str){
-  return String(str).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
 }
 
 function todayKey(){
@@ -328,21 +415,16 @@ function getSettings(){
 }
 
 function nowChicago(){
-  // Use Intl so we don't manually handle DST.
   const fmt = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", hour: "2-digit", minute: "2-digit", hour12: false });
   const parts = fmt.formatToParts(new Date());
   const hh = Number(parts.find(p=>p.type==="hour")?.value || "0");
   const mm = Number(parts.find(p=>p.type==="minute")?.value || "0");
   return { hh, mm, minutes: hh*60+mm };
 }
-
-function inWindow(mins, start, end){
-  // inclusive start, exclusive end
-  return mins >= start && mins < end;
-}
+function inWindow(mins, start, end){ return mins >= start && mins < end; }
 
 function sessionStatus(){
-  // WINDOWS IN CHICAGO TIME (simple + good enough for MVP)
+  // MVP windows in Chicago time:
   // London core: 02:00–05:00 CT
   // NY core: 08:00–11:00 CT
   // Overlap (best): 08:00–10:00 CT
@@ -350,15 +432,14 @@ function sessionStatus(){
   const now = nowChicago();
 
   const windows = {
-    LONDON: { start: 2*60, end: 5*60, label: "London (02:00–05:00 CT)" },
-    NY: { start: 8*60, end: 11*60, label: "New York (08:00–11:00 CT)" },
+    LONDON:  { start: 2*60, end: 5*60,  label: "London (02:00–05:00 CT)" },
+    NY:      { start: 8*60, end: 11*60, label: "New York (08:00–11:00 CT)" },
     OVERLAP: { start: 8*60, end: 10*60, label: "Overlap (08:00–10:00 CT)" },
-    OFF: { start: 0, end: 24*60, label: "Off (all day)" }
+    OFF:     { start: 0,    end: 24*60, label: "Off (all day)" }
   };
 
   const w = windows[sessionMode] || windows.OVERLAP;
   const allowed = sessionMode === "OFF" ? true : inWindow(now.minutes, w.start, w.end);
-
   return { now, mode: sessionMode, allowed, label: w.label };
 }
 
@@ -366,15 +447,7 @@ function renderSession(){
   const s = sessionStatus();
   document.getElementById("nowTime").textContent = `${String(s.now.hh).padStart(2,"0")}:${String(s.now.mm).padStart(2,"0")}`;
   document.getElementById("sessionWindow").textContent = s.label;
-
-  const analyzeBtn = document.getElementById("analyzeBtn");
-  if(s.allowed){
-    setBadge(document.getElementById("sessionBadge"), "IN SESSION", "good");
-  } else {
-    setBadge(document.getElementById("sessionBadge"), "OUT OF SESSION", "warn");
-  }
-
-  // Don't decide analyze enable here alone; combined with Trade Guard below.
+  setBadge(document.getElementById("sessionBadge"), s.allowed ? "IN SESSION" : "OUT OF SESSION", s.allowed ? "good" : "warn");
 }
 
 function guardStatus(){
@@ -413,6 +486,7 @@ function applyCombinedLocks(){
   const btn = document.getElementById("analyzeBtn");
 
   const blocked = g.maxed || g.coolingDown || !s.allowed;
+
   btn.disabled = blocked;
 
   if(g.maxed){
@@ -422,7 +496,7 @@ function applyCombinedLocks(){
   } else if(!s.allowed){
     setBadge(document.getElementById("statusBadge"), "Blocked (Out of session)", "warn");
   } else {
-    setBadge(document.getElementById("statusBadge"), "Ready", "good");
+    setBadge(document.getElementById("statusBadge"), universeLoaded ? "Ready" : "Ready (Universe pending)", "good");
   }
 }
 
@@ -454,6 +528,182 @@ function renderWhy(why){
   document.getElementById("whyCount").textContent = String(items.length);
 }
 
+function showLevels(levels){
+  const box = document.getElementById("levelsBox");
+  if(!levels){ box.style.display = "none"; return; }
+  box.style.display = "block";
+
+  document.getElementById("levelsDir").textContent = levels.dir || "—";
+  document.getElementById("lvlEntry").textContent = levels.entry ?? "—";
+  document.getElementById("lvlStop").textContent  = levels.stop ?? "—";
+  document.getElementById("lvlTP1").textContent   = levels.tp1 ?? "—";
+  document.getElementById("lvlTP2").textContent   = levels.tp2 ?? "—";
+
+  const entry = Number(levels.entry);
+  const stop = Number(levels.stop);
+  const dist = (Number.isFinite(entry) && Number.isFinite(stop)) ? Math.abs(entry - stop) : null;
+  document.getElementById("lvlRiskNote").textContent = dist ? ("Stop distance: " + dist.toFixed(2)) : "—";
+}
+
+function showPosition(pos){
+  const box = document.getElementById("posBox");
+  if(!pos){ box.style.display = "none"; return; }
+  box.style.display = "block";
+  document.getElementById("posRisk").textContent = "$" + (pos.riskUSD ?? "—");
+  document.getElementById("posNotional").textContent = "$" + (pos.notionalUSD ?? "—");
+  document.getElementById("posQty").textContent = pos.qtyApprox ?? "—";
+  document.getElementById("posLev").textContent = pos.leverageHint ?? "—";
+  document.getElementById("posStopDist").textContent = pos.stopDistance ?? "—";
+}
+
+function showOrders(orders){
+  const box = document.getElementById("ordersBox");
+  if(!orders){ box.style.display = "none"; return; }
+  box.style.display = "block";
+
+  document.getElementById("ordersSide").textContent = `${orders.entrySide} • ${orders.entryType}`;
+  document.getElementById("ordEntry").textContent = orders.entryPrice ?? "—";
+  document.getElementById("ordEntryS").textContent = `Qty ≈ ${orders.qtyApprox} • ~$${orders.notionalUSD} notional`;
+
+  const sl = orders.stopLoss?.price ?? "—";
+  const slSide = orders.stopLoss?.side ?? "—";
+  document.getElementById("ordSL").textContent = sl;
+  document.getElementById("ordSLS").textContent = `Exit side: ${slSide}`;
+
+  const tp1 = orders.takeProfits?.find(x => x.name==="TP1")?.price ?? "—";
+  const tp2 = orders.takeProfits?.find(x => x.name==="TP2")?.price ?? "—";
+  document.getElementById("ordTP1").textContent = tp1;
+  document.getElementById("ordTP2").textContent = tp2;
+
+  const notes = orders.notes;
+  const notesBox = document.getElementById("ordersNotes");
+  if(Array.isArray(notes) && notes.length){
+    notesBox.style.display = "block";
+    notesBox.innerHTML = "<ul>" + notes.map(n => `<li>${escapeHtml(n)}</li>`).join("") + "</ul>";
+  } else {
+    notesBox.style.display = "none";
+    notesBox.innerHTML = "";
+  }
+}
+
+async function copyLevels(){
+  if(!lastCard?.levels){ alert("No levels to copy yet."); return; }
+  const c = lastCard;
+  const L = c.levels;
+  const P = c.position;
+
+  const text =
+`GUARDIAN LEVELS
+Symbol: ${c.symbol}
+Direction: ${L.dir}
+Entry: ${L.entry}
+Stop: ${L.stop}
+TP1: ${L.tp1} (30%)
+TP2: ${L.tp2} (30%)
+Runner: 40%
+Risk: ${P?.riskUSD ? "$"+P.riskUSD : "—"} | Notional: ${P?.notionalUSD ? "$"+P.notionalUSD : "—"} | Leverage: ${P?.leverageHint || "—"}
+Reason: ${c.reason}`;
+
+  try{ await navigator.clipboard.writeText(text); alert("Copied levels to clipboard."); }
+  catch{ prompt("Copy this:", text); }
+}
+
+async function copyOrders(){
+  if(!lastCard?.orders){ alert("No orders to copy yet."); return; }
+  const o = lastCard.orders;
+  const tp1 = o.takeProfits?.find(x => x.name==="TP1")?.price ?? "—";
+  const tp2 = o.takeProfits?.find(x => x.name==="TP2")?.price ?? "—";
+  const notes = Array.isArray(o.notes) ? o.notes.join("\n- ") : "";
+
+  const text =
+`GUARDIAN ORDERS (BYBIT CHECKLIST)
+Symbol: ${o.symbol}
+Entry: ${o.entrySide} • ${o.entryType}
+Entry (info): ${o.entryPrice}
+Size: ~$${o.notionalUSD} notional • Qty ≈ ${o.qtyApprox}
+Stop Loss: ${o.stopLoss?.price} (Exit side: ${o.stopLoss?.side})
+TP1: ${tp1} (30%)
+TP2: ${tp2} (30%)
+Runner: 40% trail structure
+Notes:
+- ${notes}`;
+
+  try{ await navigator.clipboard.writeText(text); alert("Copied orders to clipboard."); }
+  catch{ prompt("Copy this:", text); }
+}
+
+function clearResultUI(){
+  showLevels(null);
+  showPosition(null);
+  showOrders(null);
+  renderWhy(["Click Analyze to load a Trade Card."]);
+  document.getElementById("raw").textContent = "Waiting…";
+  setBadge(document.getElementById("stateBadge"), "—");
+  setBadge(document.getElementById("trendBadge"), "15m: —");
+  document.getElementById("kvSymbol").textContent = "—";
+  document.getElementById("kvTrend").textContent = "—";
+  document.getElementById("kvAction").textContent = "—";
+  document.getElementById("kvReason").textContent = "—";
+}
+
+async function loadUniverse(force=false){
+  const btn = document.getElementById("refreshUniverseBtn");
+  const chip = document.getElementById("universeChip");
+  const sel = document.getElementById("symbol");
+
+  try{
+    btn.disabled = true;
+    chip.textContent = "Universe: Loading…";
+    chip.classList.remove("good","warn","bad");
+
+    // best-effort cache in browser (60s)
+    const cacheKey = "guardian:universe:top50";
+    const cacheTsKey = "guardian:universe:top50:ts";
+    const now = Date.now();
+    const cachedTs = Number(localStorage.getItem(cacheTsKey) || 0);
+    const cachedRaw = localStorage.getItem(cacheKey);
+
+    let uni = null;
+    if(!force && cachedRaw && (now - cachedTs) < 60_000){
+      uni = JSON.parse(cachedRaw);
+    } else {
+      const r = await fetch("/api/analyze?universe=1", { cache: "no-store" });
+      uni = await r.json();
+      localStorage.setItem(cacheKey, JSON.stringify(uni));
+      localStorage.setItem(cacheTsKey, String(now));
+    }
+
+    const symbols = Array.isArray(uni?.symbols) ? uni.symbols : [];
+    if(!symbols.length) throw new Error("Universe empty");
+
+    // preserve current selected symbol if possible
+    const current = sel.value;
+
+    sel.innerHTML = "";
+    for(const s of symbols){
+      const opt = document.createElement("option");
+      opt.value = s;
+      opt.textContent = s;
+      sel.appendChild(opt);
+    }
+
+    // restore selection if still present
+    if(symbols.includes(current)) sel.value = current;
+
+    universeLoaded = true;
+    chip.textContent = `Universe: Top 50 loaded`;
+    chip.classList.add("good");
+  } catch(e){
+    universeLoaded = false;
+    chip.textContent = "Universe: fallback (BTC/ETH)";
+    chip.classList.add("warn");
+    // keep existing options if load failed
+  } finally {
+    btn.disabled = false;
+    tick();
+  }
+}
+
 async function run(){
   tick();
   const g = guardStatus();
@@ -471,27 +721,37 @@ async function run(){
   let url = "/api/analyze?symbol=" + encodeURIComponent(symbol) + "&equity=" + encodeURIComponent(equity);
   if(test) url += "&test=1";
 
-  const r = await fetch(url, { cache: "no-store" });
-  const j = await r.json();
-  lastCard = j;
+  try{
+    const r = await fetch(url, { cache: "no-store" });
+    const j = await r.json();
+    lastCard = j;
 
-  setBadge(document.getElementById("statusBadge"), "Ready", "good");
+    const state = j.state || "NO_TRADE";
+    const dir = j.trend?.dir || "NONE";
+    setBadge(document.getElementById("stateBadge"), state, state === "TRADE_AVAILABLE" ? "good" : state === "BLOCKED" ? "bad" : "warn");
+    setBadge(document.getElementById("trendBadge"), "15m: " + dir, dir === "UP" ? "good" : dir === "DOWN" ? "bad" : "warn");
 
-  const state = j.state || "NO_TRADE";
-  const dir = j.trend?.dir || "NONE";
-  setBadge(document.getElementById("stateBadge"), state, state === "TRADE_AVAILABLE" ? "good" : "warn");
-  setBadge(document.getElementById("trendBadge"), "15m: " + dir, dir === "UP" ? "good" : dir === "DOWN" ? "bad" : "warn");
+    document.getElementById("kvSymbol").textContent = j.symbol || symbol;
+    document.getElementById("kvTrend").textContent = dir;
+    document.getElementById("kvReason").textContent = j.reason || "—";
+    document.getElementById("kvAction").textContent =
+      state === "TRADE_AVAILABLE" ? "Trade allowed" :
+      state === "BLOCKED" ? "Trading blocked" :
+      "Stand down";
 
-  document.getElementById("kvSymbol").textContent = j.symbol || symbol;
-  document.getElementById("kvTrend").textContent = dir;
-  document.getElementById("kvReason").textContent = j.reason || "—";
-  document.getElementById("kvAction").textContent =
-    state === "TRADE_AVAILABLE" ? "Trade allowed" :
-    state === "BLOCKED" ? "Trading blocked" :
-    "Stand down";
+    renderWhy(j.why);
+    showLevels(j.levels);
+    showPosition(j.position);
+    showOrders(j.orders);
 
-  renderWhy(j.why);
-  document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
+    document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
+
+    setBadge(document.getElementById("statusBadge"), "Ready", "good");
+  } catch(e){
+    setBadge(document.getElementById("statusBadge"), "Error", "bad");
+    clearResultUI();
+    document.getElementById("raw").textContent = "Fetch failed: " + String(e?.message || e);
+  }
 }
 
 function tick(){
@@ -505,6 +765,8 @@ document.getElementById("cooldownMin").addEventListener("change", tick);
 document.getElementById("sessionMode").addEventListener("change", tick);
 
 tick();
+clearResultUI();
+loadUniverse(false);
 setInterval(tick, 1000 * 20);
 </script>
 </body>

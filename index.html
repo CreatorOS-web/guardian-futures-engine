@@ -12,7 +12,6 @@
   <style>
     :root{
       --bg:#070b18;
-      --panel:#0c1430;
       --panel2:#0a1026;
       --border:rgba(255,255,255,.10);
       --text:#eef2ff;
@@ -80,7 +79,6 @@
       font-family: inherit;
     }
     input{width:150px}
-
     button{
       padding:10px 14px;
       border-radius:12px;
@@ -93,24 +91,18 @@
       font-family: inherit;
     }
     button:hover{background: rgba(255,255,255,.14)}
-    button:active{transform: translateY(1px)}
     .btnPrimary{background: rgba(37,99,235,.35); border-color: rgba(37,99,235,.55);}
     .btnPrimary:hover{background: rgba(37,99,235,.45);}
 
     .toggle{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      padding:8px 10px;
-      border-radius:12px;
-      border:1px solid var(--border);
+      display:flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius:12px;border:1px solid var(--border);
       background: rgba(255,255,255,.06);
       color: rgba(238,242,255,.85);
-      font-size:13px;
-      user-select:none;
+      font-size:13px; user-select:none;
     }
     .toggle input{width:auto}
-    .toggle span{color:rgba(238,242,255,.85); font-weight:800}
+    .toggle span{font-weight:800}
     .toggle small{color:var(--muted); font-weight:700}
 
     .cardBody{padding:16px}
@@ -137,9 +129,7 @@
     .whyList li{margin:7px 0;color:rgba(238,242,255,.78);line-height:1.4}
 
     .levelsGrid, .posGrid, .ordersGrid{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:10px;
+      display:grid; grid-template-columns: 1fr 1fr; gap:10px;
     }
     @media (max-width: 640px){ .levelsGrid, .posGrid, .ordersGrid{grid-template-columns:1fr} }
 
@@ -165,8 +155,7 @@
       padding:12px;border-radius:14px;background: rgba(0,0,0,.22);
       border:1px solid var(--border);
       color: rgba(238,242,255,.85);
-      font-size:13px;
-      line-height:1.45;
+      font-size:13px; line-height:1.45;
     }
     .notes ul{margin:0;padding-left:18px}
     .notes li{margin:6px 0;color:rgba(238,242,255,.78)}
@@ -179,10 +168,7 @@
     <div class="top">
       <div>
         <h1>Guardian Futures Engine</h1>
-        <div class="sub">
-          Clean Trade Card output for <strong>BTCUSDT</strong> and <strong>ETHUSDT</strong>.
-          Decision support first — disciplined signals only.
-        </div>
+        <div class="sub">Decision support first — disciplined signals only.</div>
         <div class="chips">
           <span class="chip">Vercel Hosted</span>
           <span class="chip">15m Structure + 5m Trigger</span>
@@ -231,21 +217,17 @@
                 <button onclick="copyLevels()">Copy Levels</button>
               </div>
             </div>
-
             <div class="levelsGrid">
               <div class="lvl"><div class="k">Entry</div><div class="v" id="lvlEntry">—</div><div class="s">Trigger: reclaim close</div></div>
               <div class="lvl"><div class="k">Stop</div><div class="v" id="lvlStop">—</div><div class="s" id="lvlRiskNote">—</div></div>
-              <div class="lvl"><div class="k">TP1</div><div class="v" id="lvlTP1">—</div><div class="s">+0.5R • Close 30%</div></div>
-              <div class="lvl"><div class="k">TP2</div><div class="v" id="lvlTP2">—</div><div class="s">+1.0R • Close 30%</div></div>
-              <div class="lvl" style="grid-column:1/-1;"><div class="k">Runner</div><div class="v">40%</div><div class="s">Trail structure (next swings)</div></div>
+              <div class="lvl"><div class="k">TP1 (30%)</div><div class="v" id="lvlTP1">—</div><div class="s">Close 30%</div></div>
+              <div class="lvl"><div class="k">TP2 (30%)</div><div class="v" id="lvlTP2">—</div><div class="s">Close 30%</div></div>
+              <div class="lvl" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
             </div>
           </div>
 
           <div class="posBox" id="posBox" style="display:none;">
-            <div class="boxHead">
-              <h3>Position</h3>
-              <div class="badge">Sizing</div>
-            </div>
+            <div class="boxHead"><h3>Position</h3><div class="badge">Sizing</div></div>
             <div class="posGrid">
               <div class="pos"><div class="k">Risk (USD)</div><div class="v" id="posRisk">—</div><div class="s">Max loss if stop hits</div></div>
               <div class="pos"><div class="k">Notional (USD)</div><div class="v" id="posNotional">—</div><div class="s">Suggested size</div></div>
@@ -276,13 +258,8 @@
           </div>
 
           <div class="whyBox">
-            <div class="boxHead">
-              <h3>Why</h3>
-              <div class="badge" id="whyCount">0</div>
-            </div>
-            <ul class="whyList" id="whyList">
-              <li>Click Analyze to load a Trade Card.</li>
-            </ul>
+            <div class="boxHead"><h3>Why</h3><div class="badge" id="whyCount">0</div></div>
+            <ul class="whyList" id="whyList"><li>Click Analyze to load a Trade Card.</li></ul>
           </div>
 
           <div class="mono" id="raw">Waiting…</div>
@@ -291,16 +268,13 @@
 
       <div class="card">
         <div class="cardHeader">
-          <div class="titleRow">
-            <div style="font-weight:900;">How to use</div>
-            <div class="badge warn">MVP</div>
-          </div>
+          <div class="titleRow"><div style="font-weight:900;">How to use</div><div class="badge warn">MVP</div></div>
         </div>
         <div class="cardBody">
           <div class="sideNote">
             <p><strong>1)</strong> Analyze → wait for <strong>TRADE_AVAILABLE</strong>.</p>
             <p><strong>2)</strong> Use <strong>Orders</strong> as your Bybit checklist (SL/TP clarity).</p>
-            <p><strong>3)</strong> Risk is capped by sizing — that’s your “protect me from myself”.</p>
+            <p><strong>3)</strong> Sizing caps risk — protect-from-yourself.</p>
           </div>
         </div>
       </div>
@@ -325,6 +299,15 @@ function kindForTrend(dir){
   if(dir === "DOWN") return "bad";
   return "warn";
 }
+function escapeHtml(str){
+  return String(str)
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
 function renderWhy(why){
   const list = document.getElementById("whyList");
   list.innerHTML = "";
@@ -336,6 +319,7 @@ function renderWhy(why){
   }
   document.getElementById("whyCount").textContent = String(items.length);
 }
+
 function showLevels(levels){
   const box = document.getElementById("levelsBox");
   if(!levels){ box.style.display = "none"; return; }
@@ -352,11 +336,11 @@ function showLevels(levels){
   const dist = (Number.isFinite(entry) && Number.isFinite(stop)) ? Math.abs(entry - stop) : null;
   document.getElementById("lvlRiskNote").textContent = dist ? ("Stop distance: " + dist.toFixed(2)) : "—";
 }
+
 function showPosition(pos){
   const box = document.getElementById("posBox");
   if(!pos){ box.style.display = "none"; return; }
   box.style.display = "block";
-
   document.getElementById("posRisk").textContent = "$" + (pos.riskUSD ?? "—");
   document.getElementById("posNotional").textContent = "$" + (pos.notionalUSD ?? "—");
   document.getElementById("posQty").textContent = pos.qtyApprox ?? "—";
@@ -370,10 +354,9 @@ function showOrders(orders){
   box.style.display = "block";
 
   document.getElementById("ordersSide").textContent = `${orders.entrySide} • ${orders.entryType}`;
+
   document.getElementById("ordEntry").textContent = orders.entryPrice ?? "—";
   document.getElementById("ordEntryS").textContent = `Qty ≈ ${orders.qtyApprox} • ~$${orders.notionalUSD} notional`;
-
-  document.getElementByIdifty in" : "—";
 
   const sl = orders.stopLoss?.price ?? "—";
   const slSide = orders.stopLoss?.side ?? "—";
@@ -396,20 +379,8 @@ function showOrders(orders){
   }
 }
 
-function escapeHtml(str){
-  return String(str)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
-}
-
 async function copyLevels(){
-  if(!lastCard?.levels){
-    alert("No levels to copy yet.");
-    return;
-  }
+  if(!lastCard?.levels){ alert("No levels to copy yet."); return; }
   const c = lastCard;
   const L = c.levels;
   const P = c.position;
@@ -426,23 +397,16 @@ Runner: 40%
 Risk: ${P?.riskUSD ? "$"+P.riskUSD : "—"} | Notional: ${P?.notionalUSD ? "$"+P.notionalUSD : "—"} | Leverage: ${P?.leverageHint || "—"}
 Reason: ${c.reason}`;
 
-  try{
-    await navigator.clipboard.writeText(text);
-    alert("Copied levels to clipboard.");
-  }catch{
-    prompt("Copy this:", text);
-  }
+  try{ await navigator.clipboard.writeText(text); alert("Copied levels to clipboard."); }
+  catch{ prompt("Copy this:", text); }
 }
 
 async function copyOrders(){
-  if(!lastCard?.orders){
-    alert("No orders to copy yet.");
-    return;
-  }
+  if(!lastCard?.orders){ alert("No orders to copy yet."); return; }
   const o = lastCard.orders;
-  const notes = Array.isArray(o.notes) ? o.notes.join("\n- ") : "";
   const tp1 = o.takeProfits?.find(x => x.name==="TP1")?.price ?? "—";
   const tp2 = o.takeProfits?.find(x => x.name==="TP2")?.price ?? "—";
+  const notes = Array.isArray(o.notes) ? o.notes.join("\n- ") : "";
 
   const text =
 `GUARDIAN ORDERS (BYBIT CHECKLIST)
@@ -457,12 +421,8 @@ Runner: 40% trail structure
 Notes:
 - ${notes}`;
 
-  try{
-    await navigator.clipboard.writeText(text);
-    alert("Copied orders to clipboard.");
-  }catch{
-    prompt("Copy this:", text);
-  }
+  try{ await navigator.clipboard.writeText(text); alert("Copied orders to clipboard."); }
+  catch{ prompt("Copy this:", text); }
 }
 
 async function run(){
@@ -483,7 +443,6 @@ async function run(){
 
   const state = j.state || "NO_TRADE";
   const dir = j.trend?.dir || "NONE";
-
   setBadge(document.getElementById("stateBadge"), state, kindForState(state));
   setBadge(document.getElementById("trendBadge"), "15m: " + dir, kindForTrend(dir));
 

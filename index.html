@@ -78,9 +78,10 @@
       font-size:14px;
       font-family: inherit;
     }
-    input{width:150px}
+    input{width:170px}
     .tiny{width:120px}
     .wide{min-width:190px}
+    .search{min-width:220px}
 
     button{
       padding:10px 14px;
@@ -159,17 +160,40 @@
       white-space:pre;
     }
 
-    .notes{
+    .list{
       margin-top:10px;
-      padding:12px;border-radius:14px;background: rgba(0,0,0,.22);
-      border:1px solid var(--border);
-      color: rgba(238,242,255,.85);
-      font-size:13px; line-height:1.45;
+      display:grid;
+      gap:8px;
     }
-    .notes ul{margin:0;padding-left:18px}
-    .notes li{margin:6px 0;color:rgba(238,242,255,.78)}
-    .sideNote{color:rgba(238,242,255,.76);font-size:13px;line-height:1.55}
-    .sideNote strong{color:var(--text)}
+    .row{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--border);
+      background: rgba(0,0,0,.14);
+      cursor:pointer;
+    }
+    .row:hover{background: rgba(255,255,255,.06)}
+    .row .left{display:flex;flex-direction:column;gap:4px}
+    .row .sym{font-weight:900}
+    .row .meta{font-size:12px;color:rgba(238,242,255,.70)}
+    .row .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .pill{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: rgba(238,242,255,.80);
+      white-space:nowrap;
+    }
+    .pill.good{border-color:rgba(36,209,138,.35);background:rgba(36,209,138,.10);color:rgba(36,209,138,1)}
+    .pill.warn{border-color:rgba(255,209,102,.35);background:rgba(255,209,102,.10);color:rgba(255,209,102,1)}
+    .pill.bad{border-color:rgba(255,92,122,.35);background:rgba(255,92,122,.10);color:rgba(255,92,122,1)}
+    .hint{font-size:12px;color:rgba(238,242,255,.70);margin-top:8px}
   </style>
 </head>
 <body>
@@ -197,12 +221,12 @@
             <div class="badge" id="trendBadge">15m: —</div>
           </div>
           <div class="controls">
-            <select id="symbol" class="wide" title="Top 50 Bybit linear perps (dynamic)">
-              <option>BTCUSDT</option>
-              <option>ETHUSDT</option>
-            </select>
-
+            <!-- Search -->
+            <input id="symbolSearch" class="search" placeholder="Search Top 50 (ex: SOL, XRP, AVAX)" />
             <button id="refreshUniverseBtn" onclick="loadUniverse(true)">Refresh Top 50</button>
+
+            <!-- Keep dropdown (hidden usefulness) -->
+            <select id="symbol" class="wide" title="Selected symbol (Top 50)" style="display:none;"></select>
 
             <input id="equity" type="number" value="200" min="10" step="10" />
             <label class="toggle" title="For UI testing only (forces levels).">
@@ -210,11 +234,32 @@
               <span>Test</span><small>mode</small>
             </label>
 
-            <button class="btnPrimary" id="analyzeBtn" onclick="run()">Analyze</button>
+            <button class="btnPrimary" id="analyzeBtn" onclick="run()">Analyze Selected</button>
+            <button id="scanBtn" onclick="scanTop3()">Scan Top 3</button>
           </div>
         </div>
 
         <div class="cardBody">
+
+          <!-- Symbol picker results -->
+          <div class="box" id="pickerBox">
+            <div class="boxHead">
+              <h3>Symbol Picker</h3>
+              <div class="badge" id="selectedBadge">Selected: —</div>
+            </div>
+            <div class="hint">Type to filter. Click a result to select it.</div>
+            <div class="list" id="pickerList"></div>
+          </div>
+
+          <!-- TOP 3 -->
+          <div class="box" id="top3Box" style="display:none;">
+            <div class="boxHead">
+              <h3>Top Opportunities (0–3)</h3>
+              <div class="badge" id="top3Badge">—</div>
+            </div>
+            <div class="list" id="top3List"></div>
+            <div class="hint">Click a row to load that symbol’s full Trade Card.</div>
+          </div>
 
           <!-- SESSION FILTER -->
           <div class="box" id="sessionBox">
@@ -337,8 +382,6 @@
               <div class="cell"><div class="k">TP2 (30%)</div><div class="v" id="ordTP2">—</div><div class="s">Close 30%</div></div>
               <div class="cell" style="grid-column:1/-1;"><div class="k">Runner (40%)</div><div class="v">Trail structure</div><div class="s">Manual trail for now</div></div>
             </div>
-
-            <div class="notes" id="ordersNotes" style="display:none;"></div>
           </div>
 
           <!-- WHY -->
@@ -357,13 +400,10 @@
         </div>
         <div class="cardBody">
           <div class="sideNote">
-            <p><strong>1)</strong> The symbol list auto-loads the <strong>Top 50</strong> perps from Bybit.</p>
-            <p><strong>2)</strong> Analyze → wait for <strong>TRADE_AVAILABLE</strong>.</p>
-            <p><strong>3)</strong> Place the trade manually, then click <strong>Mark Trade Taken</strong>.</p>
-            <p><strong>4)</strong> If blocked (session/cooldown/max/day), Guardian is protecting you.</p>
-            <p style="margin-top:10px;color:rgba(238,242,255,.70);font-size:12px;">
-              Tip: Use <strong>Test mode</strong> to verify the UI without waiting for real triggers.
-            </p>
+            <p><strong>1)</strong> Type a symbol in the search bar (Top 50 universe).</p>
+            <p><strong>2)</strong> Click a result to select it.</p>
+            <p><strong>3)</strong> Analyze Selected → wait for <strong>TRADE_AVAILABLE</strong>.</p>
+            <p><strong>4)</strong> Or click <strong>Scan Top 3</strong> to find the best setups right now.</p>
           </div>
         </div>
       </div>
@@ -373,19 +413,13 @@
 <script>
 let lastCard = null;
 let universeLoaded = false;
+let universeTop = [];         // [{symbol,lastPrice,turnover24h,volume24h}]
+let selectedSymbol = "BTCUSDT";
 
 function setBadge(el, text, kind){
   el.textContent = text;
   el.classList.remove("good","warn","bad");
   if(kind) el.classList.add(kind);
-}
-function escapeHtml(str){
-  return String(str)
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
 }
 
 function todayKey(){
@@ -424,20 +458,14 @@ function nowChicago(){
 function inWindow(mins, start, end){ return mins >= start && mins < end; }
 
 function sessionStatus(){
-  // MVP windows in Chicago time:
-  // London core: 02:00–05:00 CT
-  // NY core: 08:00–11:00 CT
-  // Overlap (best): 08:00–10:00 CT
   const { sessionMode } = getSettings();
   const now = nowChicago();
-
   const windows = {
     LONDON:  { start: 2*60, end: 5*60,  label: "London (02:00–05:00 CT)" },
     NY:      { start: 8*60, end: 11*60, label: "New York (08:00–11:00 CT)" },
     OVERLAP: { start: 8*60, end: 10*60, label: "Overlap (08:00–10:00 CT)" },
     OFF:     { start: 0,    end: 24*60, label: "Off (all day)" }
   };
-
   const w = windows[sessionMode] || windows.OVERLAP;
   const allowed = sessionMode === "OFF" ? true : inWindow(now.minutes, w.start, w.end);
   return { now, mode: sessionMode, allowed, label: w.label };
@@ -466,8 +494,8 @@ function guardStatus(){
 function renderGuard(){
   const s = guardStatus();
   document.getElementById("guardToday").textContent = `${s.tradesTaken}/${s.maxTrades} trades taken`;
-
   const timeLeftEl = document.getElementById("guardTimeLeft");
+
   if(s.maxed){
     timeLeftEl.textContent = "Blocked: max trades reached for today.";
     setBadge(document.getElementById("guardBadge"), "BLOCKED (MAX)", "bad");
@@ -483,11 +511,11 @@ function renderGuard(){
 function applyCombinedLocks(){
   const g = guardStatus();
   const s = sessionStatus();
-  const btn = document.getElementById("analyzeBtn");
 
   const blocked = g.maxed || g.coolingDown || !s.allowed;
 
-  btn.disabled = blocked;
+  document.getElementById("analyzeBtn").disabled = blocked;
+  document.getElementById("scanBtn").disabled = blocked || !universeLoaded;
 
   if(g.maxed){
     setBadge(document.getElementById("statusBadge"), "Blocked (Max trades)", "bad");
@@ -532,19 +560,16 @@ function showLevels(levels){
   const box = document.getElementById("levelsBox");
   if(!levels){ box.style.display = "none"; return; }
   box.style.display = "block";
-
   document.getElementById("levelsDir").textContent = levels.dir || "—";
   document.getElementById("lvlEntry").textContent = levels.entry ?? "—";
   document.getElementById("lvlStop").textContent  = levels.stop ?? "—";
   document.getElementById("lvlTP1").textContent   = levels.tp1 ?? "—";
   document.getElementById("lvlTP2").textContent   = levels.tp2 ?? "—";
-
   const entry = Number(levels.entry);
   const stop = Number(levels.stop);
   const dist = (Number.isFinite(entry) && Number.isFinite(stop)) ? Math.abs(entry - stop) : null;
   document.getElementById("lvlRiskNote").textContent = dist ? ("Stop distance: " + dist.toFixed(2)) : "—";
 }
-
 function showPosition(pos){
   const box = document.getElementById("posBox");
   if(!pos){ box.style.display = "none"; return; }
@@ -555,35 +580,21 @@ function showPosition(pos){
   document.getElementById("posLev").textContent = pos.leverageHint ?? "—";
   document.getElementById("posStopDist").textContent = pos.stopDistance ?? "—";
 }
-
 function showOrders(orders){
   const box = document.getElementById("ordersBox");
   if(!orders){ box.style.display = "none"; return; }
   box.style.display = "block";
-
   document.getElementById("ordersSide").textContent = `${orders.entrySide} • ${orders.entryType}`;
   document.getElementById("ordEntry").textContent = orders.entryPrice ?? "—";
   document.getElementById("ordEntryS").textContent = `Qty ≈ ${orders.qtyApprox} • ~$${orders.notionalUSD} notional`;
-
   const sl = orders.stopLoss?.price ?? "—";
   const slSide = orders.stopLoss?.side ?? "—";
   document.getElementById("ordSL").textContent = sl;
   document.getElementById("ordSLS").textContent = `Exit side: ${slSide}`;
-
   const tp1 = orders.takeProfits?.find(x => x.name==="TP1")?.price ?? "—";
   const tp2 = orders.takeProfits?.find(x => x.name==="TP2")?.price ?? "—";
   document.getElementById("ordTP1").textContent = tp1;
   document.getElementById("ordTP2").textContent = tp2;
-
-  const notes = orders.notes;
-  const notesBox = document.getElementById("ordersNotes");
-  if(Array.isArray(notes) && notes.length){
-    notesBox.style.display = "block";
-    notesBox.innerHTML = "<ul>" + notes.map(n => `<li>${escapeHtml(n)}</li>`).join("") + "</ul>";
-  } else {
-    notesBox.style.display = "none";
-    notesBox.innerHTML = "";
-  }
 }
 
 async function copyLevels(){
@@ -591,7 +602,6 @@ async function copyLevels(){
   const c = lastCard;
   const L = c.levels;
   const P = c.position;
-
   const text =
 `GUARDIAN LEVELS
 Symbol: ${c.symbol}
@@ -603,7 +613,6 @@ TP2: ${L.tp2} (30%)
 Runner: 40%
 Risk: ${P?.riskUSD ? "$"+P.riskUSD : "—"} | Notional: ${P?.notionalUSD ? "$"+P.notionalUSD : "—"} | Leverage: ${P?.leverageHint || "—"}
 Reason: ${c.reason}`;
-
   try{ await navigator.clipboard.writeText(text); alert("Copied levels to clipboard."); }
   catch{ prompt("Copy this:", text); }
 }
@@ -614,7 +623,6 @@ async function copyOrders(){
   const tp1 = o.takeProfits?.find(x => x.name==="TP1")?.price ?? "—";
   const tp2 = o.takeProfits?.find(x => x.name==="TP2")?.price ?? "—";
   const notes = Array.isArray(o.notes) ? o.notes.join("\n- ") : "";
-
   const text =
 `GUARDIAN ORDERS (BYBIT CHECKLIST)
 Symbol: ${o.symbol}
@@ -627,7 +635,6 @@ TP2: ${tp2} (30%)
 Runner: 40% trail structure
 Notes:
 - ${notes}`;
-
   try{ await navigator.clipboard.writeText(text); alert("Copied orders to clipboard."); }
   catch{ prompt("Copy this:", text); }
 }
@@ -646,17 +653,77 @@ function clearResultUI(){
   document.getElementById("kvReason").textContent = "—";
 }
 
+function setSelected(sym){
+  selectedSymbol = sym;
+  document.getElementById("selectedBadge").textContent = "Selected: " + sym;
+  const hiddenSel = document.getElementById("symbol");
+  hiddenSel.value = sym;
+}
+
+function renderPicker(filter=""){
+  const list = document.getElementById("pickerList");
+  list.innerHTML = "";
+
+  const q = String(filter || "").trim().toUpperCase();
+  const items = !q ? universeTop.slice(0, 12) : universeTop.filter(x => x.symbol.includes(q)).slice(0, 20);
+
+  if(!items.length){
+    const d = document.createElement("div");
+    d.className = "hint";
+    d.textContent = "No matches.";
+    list.appendChild(d);
+    return;
+  }
+
+  for(const it of items){
+    const row = document.createElement("div");
+    row.className = "row";
+    row.onclick = () => setSelected(it.symbol);
+
+    const left = document.createElement("div");
+    left.className = "left";
+    left.innerHTML = `<div class="sym">${it.symbol}</div><div class="meta">Turnover 24h: $${Math.round(it.turnover24h).toLocaleString()}</div>`;
+
+    const right = document.createElement("div");
+    right.className = "right";
+    right.innerHTML = `<span class="pill">Last: ${it.lastPrice}</span><span class="pill">Rank: #${it.rank}</span>`;
+
+    row.appendChild(left);
+    row.appendChild(right);
+    list.appendChild(row);
+  }
+}
+
+function scoreFromCard(card){
+  // Simple, explainable score (MVP):
+  // - Trade available gets a boost
+  // - Clean trend gets points
+  // - Waiting (NO_TRADE) gets less
+  // This is just to rank quickly; we’ll refine later.
+  let s = 0;
+  const dir = card?.trend?.dir || "NONE";
+  if(dir === "UP" || dir === "DOWN") s += 45;
+  if(card?.state === "TRADE_AVAILABLE") s += 45;
+  if(card?.state === "NO_TRADE") s += 20;
+  if(String(card?.reason || "").includes("invalid")) s -= 25;
+  if(String(card?.reason || "").includes("Data fetch failed")) s -= 40;
+  return Math.max(0, Math.min(100, s));
+}
+
+function pillKind(state){
+  if(state === "TRADE_AVAILABLE") return "good";
+  if(state === "BLOCKED") return "bad";
+  return "warn";
+}
+
 async function loadUniverse(force=false){
   const btn = document.getElementById("refreshUniverseBtn");
   const chip = document.getElementById("universeChip");
-  const sel = document.getElementById("symbol");
-
   try{
     btn.disabled = true;
     chip.textContent = "Universe: Loading…";
     chip.classList.remove("good","warn","bad");
 
-    // best-effort cache in browser (60s)
     const cacheKey = "guardian:universe:top50";
     const cacheTsKey = "guardian:universe:top50:ts";
     const now = Date.now();
@@ -673,31 +740,42 @@ async function loadUniverse(force=false){
       localStorage.setItem(cacheTsKey, String(now));
     }
 
-    const symbols = Array.isArray(uni?.symbols) ? uni.symbols : [];
-    if(!symbols.length) throw new Error("Universe empty");
+    const top = Array.isArray(uni?.top) ? uni.top : [];
+    if(!top.length) throw new Error("Universe empty");
 
-    // preserve current selected symbol if possible
-    const current = sel.value;
+    universeTop = top.map((x, i) => ({
+      symbol: x.symbol,
+      lastPrice: x.lastPrice,
+      turnover24h: x.turnover24h,
+      volume24h: x.volume24h,
+      rank: i+1
+    }));
 
+    // populate hidden select
+    const sel = document.getElementById("symbol");
     sel.innerHTML = "";
-    for(const s of symbols){
+    for(const it of universeTop){
       const opt = document.createElement("option");
-      opt.value = s;
-      opt.textContent = s;
+      opt.value = it.symbol;
+      opt.textContent = it.symbol;
       sel.appendChild(opt);
     }
 
-    // restore selection if still present
-    if(symbols.includes(current)) sel.value = current;
+    // select first if none
+    if(!universeTop.find(x => x.symbol === selectedSymbol)){
+      selectedSymbol = universeTop[0].symbol;
+    }
+    setSelected(selectedSymbol);
 
     universeLoaded = true;
-    chip.textContent = `Universe: Top 50 loaded`;
+    chip.textContent = "Universe: Top 50 loaded";
     chip.classList.add("good");
+
+    renderPicker(document.getElementById("symbolSearch").value || "");
   } catch(e){
     universeLoaded = false;
-    chip.textContent = "Universe: fallback (BTC/ETH)";
+    chip.textContent = "Universe: load failed";
     chip.classList.add("warn");
-    // keep existing options if load failed
   } finally {
     btn.disabled = false;
     tick();
@@ -712,7 +790,7 @@ async function run(){
   if(g.coolingDown){ alert(`Blocked: cooldown active (${g.timeLeftMin} min left).`); return; }
   if(!s.allowed){ alert("Blocked: out of your chosen session window."); return; }
 
-  const symbol = document.getElementById("symbol").value;
+  const symbol = selectedSymbol;
   const equity = document.getElementById("equity").value || 200;
   const test = document.getElementById("testToggle").checked;
 
@@ -754,6 +832,113 @@ async function run(){
   }
 }
 
+async function scanTop3(){
+  tick();
+  if(!universeLoaded){ alert("Universe not loaded yet."); return; }
+
+  const g = guardStatus();
+  const s = sessionStatus();
+  if(g.maxed){ alert("Blocked: max trades reached today."); return; }
+  if(g.coolingDown){ alert(`Blocked: cooldown active (${g.timeLeftMin} min left).`); return; }
+  if(!s.allowed){ alert("Blocked: out of your chosen session window."); return; }
+
+  const equity = document.getElementById("equity").value || 200;
+  const test = document.getElementById("testToggle").checked;
+
+  setBadge(document.getElementById("statusBadge"), "Scanning…", "warn");
+  document.getElementById("top3Box").style.display = "none";
+
+  // Scan subset: Top 15 by turnover for speed (MVP).
+  // Later we can scan all 50 with caching and scoring.
+  const scanList = universeTop.slice(0, 15).map(x => x.symbol);
+
+  const results = [];
+  for(const sym of scanList){
+    let url = "/api/analyze?symbol=" + encodeURIComponent(sym) + "&equity=" + encodeURIComponent(equity);
+    if(test) url += "&test=1";
+    try{
+      const r = await fetch(url, { cache: "no-store" });
+      const j = await r.json();
+      const score = scoreFromCard(j);
+      results.push({ symbol: sym, score, state: j.state, trend: j.trend?.dir || "NONE", reason: j.reason || "", card: j });
+    } catch(e){
+      results.push({ symbol: sym, score: 0, state: "NO_TRADE", trend: "NONE", reason: "Fetch failed", card: null });
+    }
+  }
+
+  results.sort((a,b) => b.score - a.score);
+
+  const top3 = results.slice(0, 3);
+  renderTop3(top3);
+
+  setBadge(document.getElementById("statusBadge"), "Ready", "good");
+}
+
+function renderTop3(items){
+  const box = document.getElementById("top3Box");
+  const list = document.getElementById("top3List");
+  const badge = document.getElementById("top3Badge");
+
+  list.innerHTML = "";
+  box.style.display = "block";
+
+  badge.textContent = items.length ? `Showing ${items.length}` : "No candidates";
+  if(!items.length){
+    const d = document.createElement("div");
+    d.className = "hint";
+    d.textContent = "No results.";
+    list.appendChild(d);
+    return;
+  }
+
+  for(const it of items){
+    const row = document.createElement("div");
+    row.className = "row";
+    row.onclick = () => {
+      setSelected(it.symbol);
+      if(it.card){
+        // render immediately from cached card
+        const j = it.card;
+        lastCard = j;
+        const state = j.state || "NO_TRADE";
+        const dir = j.trend?.dir || "NONE";
+        setBadge(document.getElementById("stateBadge"), state, state === "TRADE_AVAILABLE" ? "good" : state === "BLOCKED" ? "bad" : "warn");
+        setBadge(document.getElementById("trendBadge"), "15m: " + dir, dir === "UP" ? "good" : dir === "DOWN" ? "bad" : "warn");
+        document.getElementById("kvSymbol").textContent = j.symbol || it.symbol;
+        document.getElementById("kvTrend").textContent = dir;
+        document.getElementById("kvReason").textContent = j.reason || "—";
+        document.getElementById("kvAction").textContent =
+          state === "TRADE_AVAILABLE" ? "Trade allowed" :
+          state === "BLOCKED" ? "Trading blocked" :
+          "Stand down";
+        renderWhy(j.why);
+        showLevels(j.levels);
+        showPosition(j.position);
+        showOrders(j.orders);
+        document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
+      } else {
+        run();
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
+    const left = document.createElement("div");
+    left.className = "left";
+    left.innerHTML = `<div class="sym">#${it.score} • ${it.symbol}</div><div class="meta">${it.reason}</div>`;
+
+    const right = document.createElement("div");
+    right.className = "right";
+    right.innerHTML = `
+      <span class="pill ${pillKind(it.state)}">${it.state}</span>
+      <span class="pill">${it.trend}</span>
+    `;
+
+    row.appendChild(left);
+    row.appendChild(right);
+    list.appendChild(row);
+  }
+}
+
 function tick(){
   renderSession();
   renderGuard();
@@ -763,6 +948,10 @@ function tick(){
 document.getElementById("maxTrades").addEventListener("change", tick);
 document.getElementById("cooldownMin").addEventListener("change", tick);
 document.getElementById("sessionMode").addEventListener("change", tick);
+
+document.getElementById("symbolSearch").addEventListener("input", (e) => {
+  renderPicker(e.target.value);
+});
 
 tick();
 clearResultUI();

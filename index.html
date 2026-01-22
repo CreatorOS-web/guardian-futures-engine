@@ -68,7 +68,7 @@
     .badge.bad{color:rgba(255,92,122,1);border-color:rgba(255,92,122,.35);background:rgba(255,92,122,.10)}
 
     .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    input{
+    input, select{
       background: var(--panel2);
       border:1px solid var(--border);
       color:var(--text);
@@ -201,6 +201,7 @@
           <div class="titleRow">
             <div style="font-weight:900;">Trade Card</div>
             <div class="badge" id="selectedBadge">Selected: —</div>
+            <div class="badge" id="lastScanBadge">Last scan: —</div>
             <div class="badge" id="stateBadge">—</div>
             <div class="badge" id="trendBadge">15m: —</div>
           </div>
@@ -264,13 +265,13 @@
             <div class="grid2">
               <div class="cell">
                 <div class="k">Max trades/day</div>
-                <div class="v"><input class="tiny" id="maxTrades" type="number" min="1" step="1" value="3" /></div>
+                <div class="v"><input id="maxTrades" type="number" min="1" step="1" value="3" /></div>
                 <div class="s">Blocks Analyze (not Scan).</div>
               </div>
 
               <div class="cell">
                 <div class="k">Cooldown (min)</div>
-                <div class="v"><input class="tiny" id="cooldownMin" type="number" min="0" step="1" value="15" /></div>
+                <div class="v"><input id="cooldownMin" type="number" min="0" step="1" value="15" /></div>
                 <div class="s">Blocks Analyze (not Scan).</div>
               </div>
 
@@ -384,6 +385,11 @@ function setBadge(el, text, kind){
   if(kind) el.classList.add(kind);
 }
 
+function nowChicagoParts(){
+  const fmt = new Intl.DateTimeFormat("en-US", { timeZone: "America/Chicago", hour: "2-digit", minute: "2-digit", hour12: true });
+  return fmt.format(new Date()).replace(/\s/g,"");
+}
+
 function todayKey(){
   const d = new Date();
   const y = d.getFullYear();
@@ -471,8 +477,7 @@ function renderGuard(){
 }
 
 function applyLocks(){
-  // Scan should ALWAYS be clickable.
-  // Analyze is protected by guard/session and requires a selection.
+  // Scan always allowed. Analyze protected.
   const g = guardStatus();
   const s = sessionStatus();
   const analyzeBlocked = g.maxed || g.coolingDown || !s.allowed || !selectedSymbol;
@@ -601,21 +606,48 @@ Notes:
 }
 
 function scoreFromCard(card){
+  // Score 0–100: prioritize actionable + clean setups
   let s = 0;
-  const dir = card?.trend?.dir || "NONE";
-  if(dir === "UP" || dir === "DOWN") s += 45;
-  if(card?.state === "TRADE_AVAILABLE") s += 50;
-  if(card?.state === "NO_TRADE") s += 20;
+
+  const state = String(card?.state || "NO_TRADE");
+  const dir = String(card?.trend?.dir || "NONE");
   const reason = String(card?.reason || "").toLowerCase();
-  if(reason.includes("waiting")) s += 10;
-  if(reason.includes("invalid")) s -= 25;
-  if(reason.includes("fetch failed") || reason.includes("403")) s -= 40;
-  return Math.max(0, Math.min(100, s));
+  const why = Array.isArray(card?.why) ? card.why.join(" ").toLowerCase() : "";
+
+  // 1) Hard priority: trade availability
+  if(state === "TRADE_AVAILABLE") s += 60;
+  else if(state === "NO_TRADE") s += 25;
+  else if(state === "BLOCKED") s -= 30;
+
+  // 2) Trend clarity
+  if(dir === "UP" || dir === "DOWN") s += 20;
+  else s -= 10;
+
+  // 3) Soon setups
+  if(reason.includes("waiting") || reason.includes("reclaim close") || why.includes("waiting")) s += 15;
+
+  // 4) Bad setup flags
+  if(reason.includes("invalid") || reason.includes("broke protected") || why.includes("invalid")) s -= 25;
+
+  // 5) Data issues sink it
+  if(reason.includes("fetch failed") || reason.includes("403") || reason.includes("rate limit")) s -= 60;
+
+  // 6) Bonus: levels already present
+  if(card?.levels && (card.levels.entry || card.levels.stop)) s += 10;
+
+  // clamp
+  s = Math.max(0, Math.min(100, s));
+  return s;
 }
+
 function pillKind(state){
   if(state === "TRADE_AVAILABLE") return "good";
   if(state === "BLOCKED") return "bad";
   return "warn";
+}
+
+function gradeFromScore(score){
+  return score >= 80 ? "A" : score >= 60 ? "B" : "C";
 }
 
 function setSelected(sym){
@@ -652,8 +684,11 @@ async function loadUniverse(){
   }
 }
 
+function setLastScan(){
+  document.getElementById("lastScanBadge").textContent = "Last scan: " + nowChicagoParts();
+}
+
 async function scanTop3(){
-  // Scan should always do something, even in fallback mode.
   const equity = document.getElementById("equity").value || 200;
   const test = document.getElementById("testToggle").checked;
 
@@ -678,6 +713,7 @@ async function scanTop3(){
 
   results.sort((a,b) => b.score - a.score);
   renderTop3(results.slice(0,3));
+  setLastScan();
   setBadge(document.getElementById("statusBadge"), "Ready", "good");
 }
 
@@ -709,7 +745,11 @@ function renderTop3(items){
 
     const right = document.createElement("div");
     right.className = "right";
-    right.innerHTML = `<span class="pill ${pillKind(it.state)}">${it.state}</span><span class="pill">${it.trend}</span>`;
+    const grade = gradeFromScore(it.score);
+    right.innerHTML =
+      `<span class="pill ${pillKind(it.state)}">${it.state}</span>
+       <span class="pill">${it.trend}</span>
+       <span class="pill">${grade}</span>`;
 
     row.appendChild(left);
     row.appendChild(right);
@@ -718,7 +758,6 @@ function renderTop3(items){
 }
 
 async function analyzeSelected(){
-  // Analyze IS protected (this is where we "protect you from yourself")
   if(!selectedSymbol){ alert("Scan first, then click a candidate to select it."); return; }
 
   const g = guardStatus();

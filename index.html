@@ -78,10 +78,9 @@
       font-size:14px;
       font-family: inherit;
     }
-    input{width:170px}
+    input{width:160px}
     .tiny{width:120px}
-    .wide{min-width:190px}
-    .search{min-width:220px}
+    .wide{min-width:240px}
 
     button{
       padding:10px 14px;
@@ -160,21 +159,11 @@
       white-space:pre;
     }
 
-    .list{
-      margin-top:10px;
-      display:grid;
-      gap:8px;
-    }
+    .list{margin-top:10px;display:grid;gap:8px}
     .row{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid var(--border);
-      background: rgba(0,0,0,.14);
-      cursor:pointer;
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:10px 12px;border-radius:14px;border:1px solid var(--border);
+      background: rgba(0,0,0,.14);cursor:pointer;
     }
     .row:hover{background: rgba(255,255,255,.06)}
     .row .left{display:flex;flex-direction:column;gap:4px}
@@ -182,18 +171,14 @@
     .row .meta{font-size:12px;color:rgba(238,242,255,.70)}
     .row .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
     .pill{
-      font-size:12px;
-      padding:6px 10px;
-      border-radius:999px;
-      border:1px solid var(--border);
-      background: rgba(255,255,255,.06);
-      color: rgba(238,242,255,.80);
-      white-space:nowrap;
+      font-size:12px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);
+      background: rgba(255,255,255,.06);color: rgba(238,242,255,.80);white-space:nowrap;
     }
     .pill.good{border-color:rgba(36,209,138,.35);background:rgba(36,209,138,.10);color:rgba(36,209,138,1)}
     .pill.warn{border-color:rgba(255,209,102,.35);background:rgba(255,209,102,.10);color:rgba(255,209,102,1)}
     .pill.bad{border-color:rgba(255,92,122,.35);background:rgba(255,92,122,.10);color:rgba(255,92,122,1)}
-    .hint{font-size:12px;color:rgba(238,242,255,.70);margin-top:8px}
+    .sideNote{color:rgba(238,242,255,.76);font-size:13px;line-height:1.55}
+    .sideNote strong{color:var(--text)}
   </style>
 </head>
 <body>
@@ -221,12 +206,8 @@
             <div class="badge" id="trendBadge">15m: —</div>
           </div>
           <div class="controls">
-            <!-- Search -->
-            <input id="symbolSearch" class="search" placeholder="Search Top 50 (ex: SOL, XRP, AVAX)" />
+            <select id="symbol" class="wide" title="Top 50 Bybit linear perps (dynamic)"></select>
             <button id="refreshUniverseBtn" onclick="loadUniverse(true)">Refresh Top 50</button>
-
-            <!-- Keep dropdown (hidden usefulness) -->
-            <select id="symbol" class="wide" title="Selected symbol (Top 50)" style="display:none;"></select>
 
             <input id="equity" type="number" value="200" min="10" step="10" />
             <label class="toggle" title="For UI testing only (forces levels).">
@@ -234,22 +215,12 @@
               <span>Test</span><small>mode</small>
             </label>
 
-            <button class="btnPrimary" id="analyzeBtn" onclick="run()">Analyze Selected</button>
+            <button class="btnPrimary" id="analyzeBtn" onclick="run()">Analyze</button>
             <button id="scanBtn" onclick="scanTop3()">Scan Top 3</button>
           </div>
         </div>
 
         <div class="cardBody">
-
-          <!-- Symbol picker results -->
-          <div class="box" id="pickerBox">
-            <div class="boxHead">
-              <h3>Symbol Picker</h3>
-              <div class="badge" id="selectedBadge">Selected: —</div>
-            </div>
-            <div class="hint">Type to filter. Click a result to select it.</div>
-            <div class="list" id="pickerList"></div>
-          </div>
 
           <!-- TOP 3 -->
           <div class="box" id="top3Box" style="display:none;">
@@ -258,7 +229,6 @@
               <div class="badge" id="top3Badge">—</div>
             </div>
             <div class="list" id="top3List"></div>
-            <div class="hint">Click a row to load that symbol’s full Trade Card.</div>
           </div>
 
           <!-- SESSION FILTER -->
@@ -400,10 +370,9 @@
         </div>
         <div class="cardBody">
           <div class="sideNote">
-            <p><strong>1)</strong> Type a symbol in the search bar (Top 50 universe).</p>
-            <p><strong>2)</strong> Click a result to select it.</p>
-            <p><strong>3)</strong> Analyze Selected → wait for <strong>TRADE_AVAILABLE</strong>.</p>
-            <p><strong>4)</strong> Or click <strong>Scan Top 3</strong> to find the best setups right now.</p>
+            <p><strong>1)</strong> Choose a symbol from the <strong>Top 50</strong> dropdown.</p>
+            <p><strong>2)</strong> Analyze → wait for <strong>TRADE_AVAILABLE</strong>.</p>
+            <p><strong>3)</strong> Or click <strong>Scan Top 3</strong> to find the best candidates right now.</p>
           </div>
         </div>
       </div>
@@ -413,8 +382,8 @@
 <script>
 let lastCard = null;
 let universeLoaded = false;
-let universeTop = [];         // [{symbol,lastPrice,turnover24h,volume24h}]
-let selectedSymbol = "BTCUSDT";
+let universeTop = []; // [{symbol,lastPrice,turnover24h,rank}]
+const LAST_SYMBOL_KEY = "guardian:lastSymbol";
 
 function setBadge(el, text, kind){
   el.textContent = text;
@@ -511,7 +480,6 @@ function renderGuard(){
 function applyCombinedLocks(){
   const g = guardStatus();
   const s = sessionStatus();
-
   const blocked = g.maxed || g.coolingDown || !s.allowed;
 
   document.getElementById("analyzeBtn").disabled = blocked;
@@ -639,67 +607,7 @@ Notes:
   catch{ prompt("Copy this:", text); }
 }
 
-function clearResultUI(){
-  showLevels(null);
-  showPosition(null);
-  showOrders(null);
-  renderWhy(["Click Analyze to load a Trade Card."]);
-  document.getElementById("raw").textContent = "Waiting…";
-  setBadge(document.getElementById("stateBadge"), "—");
-  setBadge(document.getElementById("trendBadge"), "15m: —");
-  document.getElementById("kvSymbol").textContent = "—";
-  document.getElementById("kvTrend").textContent = "—";
-  document.getElementById("kvAction").textContent = "—";
-  document.getElementById("kvReason").textContent = "—";
-}
-
-function setSelected(sym){
-  selectedSymbol = sym;
-  document.getElementById("selectedBadge").textContent = "Selected: " + sym;
-  const hiddenSel = document.getElementById("symbol");
-  hiddenSel.value = sym;
-}
-
-function renderPicker(filter=""){
-  const list = document.getElementById("pickerList");
-  list.innerHTML = "";
-
-  const q = String(filter || "").trim().toUpperCase();
-  const items = !q ? universeTop.slice(0, 12) : universeTop.filter(x => x.symbol.includes(q)).slice(0, 20);
-
-  if(!items.length){
-    const d = document.createElement("div");
-    d.className = "hint";
-    d.textContent = "No matches.";
-    list.appendChild(d);
-    return;
-  }
-
-  for(const it of items){
-    const row = document.createElement("div");
-    row.className = "row";
-    row.onclick = () => setSelected(it.symbol);
-
-    const left = document.createElement("div");
-    left.className = "left";
-    left.innerHTML = `<div class="sym">${it.symbol}</div><div class="meta">Turnover 24h: $${Math.round(it.turnover24h).toLocaleString()}</div>`;
-
-    const right = document.createElement("div");
-    right.className = "right";
-    right.innerHTML = `<span class="pill">Last: ${it.lastPrice}</span><span class="pill">Rank: #${it.rank}</span>`;
-
-    row.appendChild(left);
-    row.appendChild(right);
-    list.appendChild(row);
-  }
-}
-
 function scoreFromCard(card){
-  // Simple, explainable score (MVP):
-  // - Trade available gets a boost
-  // - Clean trend gets points
-  // - Waiting (NO_TRADE) gets less
-  // This is just to rank quickly; we’ll refine later.
   let s = 0;
   const dir = card?.trend?.dir || "NONE";
   if(dir === "UP" || dir === "DOWN") s += 45;
@@ -709,7 +617,6 @@ function scoreFromCard(card){
   if(String(card?.reason || "").includes("Data fetch failed")) s -= 40;
   return Math.max(0, Math.min(100, s));
 }
-
 function pillKind(state){
   if(state === "TRADE_AVAILABLE") return "good";
   if(state === "BLOCKED") return "bad";
@@ -719,6 +626,8 @@ function pillKind(state){
 async function loadUniverse(force=false){
   const btn = document.getElementById("refreshUniverseBtn");
   const chip = document.getElementById("universeChip");
+  const sel = document.getElementById("symbol");
+
   try{
     btn.disabled = true;
     chip.textContent = "Universe: Loading…";
@@ -747,31 +656,31 @@ async function loadUniverse(force=false){
       symbol: x.symbol,
       lastPrice: x.lastPrice,
       turnover24h: x.turnover24h,
-      volume24h: x.volume24h,
       rank: i+1
     }));
 
-    // populate hidden select
-    const sel = document.getElementById("symbol");
+    const last = localStorage.getItem(LAST_SYMBOL_KEY) || "BTCUSDT";
+
     sel.innerHTML = "";
     for(const it of universeTop){
       const opt = document.createElement("option");
       opt.value = it.symbol;
-      opt.textContent = it.symbol;
+      opt.textContent = `#${it.rank}  ${it.symbol}`;
       sel.appendChild(opt);
     }
 
-    // select first if none
-    if(!universeTop.find(x => x.symbol === selectedSymbol)){
-      selectedSymbol = universeTop[0].symbol;
+    // restore last selection if still in list
+    if(universeTop.find(x => x.symbol === last)){
+      sel.value = last;
+    } else {
+      sel.value = universeTop[0].symbol;
     }
-    setSelected(selectedSymbol);
+
+    sel.onchange = () => localStorage.setItem(LAST_SYMBOL_KEY, sel.value);
 
     universeLoaded = true;
     chip.textContent = "Universe: Top 50 loaded";
     chip.classList.add("good");
-
-    renderPicker(document.getElementById("symbolSearch").value || "");
   } catch(e){
     universeLoaded = false;
     chip.textContent = "Universe: load failed";
@@ -790,7 +699,9 @@ async function run(){
   if(g.coolingDown){ alert(`Blocked: cooldown active (${g.timeLeftMin} min left).`); return; }
   if(!s.allowed){ alert("Blocked: out of your chosen session window."); return; }
 
-  const symbol = selectedSymbol;
+  const symbol = document.getElementById("symbol").value;
+  localStorage.setItem(LAST_SYMBOL_KEY, symbol);
+
   const equity = document.getElementById("equity").value || 200;
   const test = document.getElementById("testToggle").checked;
 
@@ -827,7 +738,6 @@ async function run(){
     setBadge(document.getElementById("statusBadge"), "Ready", "good");
   } catch(e){
     setBadge(document.getElementById("statusBadge"), "Error", "bad");
-    clearResultUI();
     document.getElementById("raw").textContent = "Fetch failed: " + String(e?.message || e);
   }
 }
@@ -848,8 +758,7 @@ async function scanTop3(){
   setBadge(document.getElementById("statusBadge"), "Scanning…", "warn");
   document.getElementById("top3Box").style.display = "none";
 
-  // Scan subset: Top 15 by turnover for speed (MVP).
-  // Later we can scan all 50 with caching and scoring.
+  // MVP: scan top 15 by turnover for speed.
   const scanList = universeTop.slice(0, 15).map(x => x.symbol);
 
   const results = [];
@@ -867,10 +776,7 @@ async function scanTop3(){
   }
 
   results.sort((a,b) => b.score - a.score);
-
-  const top3 = results.slice(0, 3);
-  renderTop3(top3);
-
+  renderTop3(results.slice(0,3));
   setBadge(document.getElementById("statusBadge"), "Ready", "good");
 }
 
@@ -881,23 +787,16 @@ function renderTop3(items){
 
   list.innerHTML = "";
   box.style.display = "block";
-
-  badge.textContent = items.length ? `Showing ${items.length}` : "No candidates";
-  if(!items.length){
-    const d = document.createElement("div");
-    d.className = "hint";
-    d.textContent = "No results.";
-    list.appendChild(d);
-    return;
-  }
+  badge.textContent = items.length ? `Showing ${items.length}` : "None";
 
   for(const it of items){
     const row = document.createElement("div");
     row.className = "row";
     row.onclick = () => {
-      setSelected(it.symbol);
+      document.getElementById("symbol").value = it.symbol;
+      localStorage.setItem(LAST_SYMBOL_KEY, it.symbol);
+      // render cached card immediately
       if(it.card){
-        // render immediately from cached card
         const j = it.card;
         lastCard = j;
         const state = j.state || "NO_TRADE";
@@ -932,7 +831,6 @@ function renderTop3(items){
       <span class="pill ${pillKind(it.state)}">${it.state}</span>
       <span class="pill">${it.trend}</span>
     `;
-
     row.appendChild(left);
     row.appendChild(right);
     list.appendChild(row);
@@ -949,12 +847,7 @@ document.getElementById("maxTrades").addEventListener("change", tick);
 document.getElementById("cooldownMin").addEventListener("change", tick);
 document.getElementById("sessionMode").addEventListener("change", tick);
 
-document.getElementById("symbolSearch").addEventListener("input", (e) => {
-  renderPicker(e.target.value);
-});
-
 tick();
-clearResultUI();
 loadUniverse(false);
 setInterval(tick, 1000 * 20);
 </script>

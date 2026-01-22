@@ -184,9 +184,9 @@
     <div class="top">
       <div>
         <h1>Guardian Futures Engine</h1>
-        <div class="sub">Scan → choose → analyze. No clutter. Only high-quality candidates. (Timezone: America/Chicago)</div>
+        <div class="sub">Scan → choose → analyze. Scanning is always allowed. Trading is still protected. (America/Chicago)</div>
         <div class="chips">
-          <span class="chip" id="universeChip">Universe: Top 50 (Bybit)</span>
+          <span class="chip" id="universeChip">Universe: Loading…</span>
           <span class="chip">Session Filter</span>
           <span class="chip">Trade Guard</span>
           <span class="chip">Levels + Orders</span>
@@ -218,7 +218,6 @@
 
         <div class="cardBody">
 
-          <!-- TOP 3 -->
           <div class="box" id="top3Box">
             <div class="boxHead">
               <h3>Best Trades Right Now (Top 3)</h3>
@@ -228,7 +227,6 @@
             <div class="list" id="top3List"></div>
           </div>
 
-          <!-- SESSION FILTER -->
           <div class="box" id="sessionBox">
             <div class="boxHead">
               <h3>Session Filter</h3>
@@ -240,13 +238,13 @@
                 <div class="k">Allowed session</div>
                 <div class="v">
                   <select id="sessionMode" style="width:100%;">
+                    <option value="OFF">Off (scan anytime)</option>
                     <option value="OVERLAP">Overlap (best)</option>
                     <option value="NY">New York</option>
                     <option value="LONDON">London</option>
-                    <option value="OFF">Off</option>
                   </select>
                 </div>
-                <div class="s">Blocks chop hours.</div>
+                <div class="s">Only blocks Analyze, not Scan.</div>
               </div>
 
               <div class="cell">
@@ -257,7 +255,6 @@
             </div>
           </div>
 
-          <!-- TRADE GUARD -->
           <div class="box" id="guardBox">
             <div class="boxHead">
               <h3>Trade Guard</h3>
@@ -268,13 +265,13 @@
               <div class="cell">
                 <div class="k">Max trades/day</div>
                 <div class="v"><input class="tiny" id="maxTrades" type="number" min="1" step="1" value="3" /></div>
-                <div class="s">Stops overtrading.</div>
+                <div class="s">Blocks Analyze (not Scan).</div>
               </div>
 
               <div class="cell">
                 <div class="k">Cooldown (min)</div>
                 <div class="v"><input class="tiny" id="cooldownMin" type="number" min="0" step="1" value="15" /></div>
-                <div class="s">Prevents revenge entries.</div>
+                <div class="s">Blocks Analyze (not Scan).</div>
               </div>
 
               <div class="cell">
@@ -294,7 +291,6 @@
             </div>
           </div>
 
-          <!-- SUMMARY -->
           <div class="kvs">
             <div class="kv"><div class="k">Symbol</div><div class="v" id="kvSymbol">—</div></div>
             <div class="kv"><div class="k">Trend</div><div class="v" id="kvTrend">—</div></div>
@@ -302,7 +298,6 @@
             <div class="kv"><div class="k">Reason</div><div class="v" id="kvReason">—</div></div>
           </div>
 
-          <!-- LEVELS -->
           <div class="box" id="levelsBox" style="display:none;">
             <div class="boxHead">
               <h3>Levels</h3>
@@ -320,7 +315,6 @@
             </div>
           </div>
 
-          <!-- POSITION -->
           <div class="box" id="posBox" style="display:none;">
             <div class="boxHead"><h3>Position</h3><div class="badge">Sizing</div></div>
             <div class="grid2">
@@ -332,7 +326,6 @@
             </div>
           </div>
 
-          <!-- ORDERS -->
           <div class="box" id="ordersBox" style="display:none;">
             <div class="boxHead">
               <h3>Orders</h3>
@@ -351,7 +344,6 @@
             </div>
           </div>
 
-          <!-- WHY -->
           <div class="box">
             <div class="boxHead"><h3>Why</h3><div class="badge" id="whyCount">0</div></div>
             <ul class="whyList" id="whyList"><li>Scan first, then analyze a selected candidate.</li></ul>
@@ -367,10 +359,10 @@
         </div>
         <div class="cardBody">
           <div class="sideNote">
-            <p><strong>1)</strong> Click <strong>Scan Best Trades</strong> (Top 50 universe).</p>
-            <p><strong>2)</strong> Click one candidate → it becomes <strong>Selected</strong>.</p>
-            <p><strong>3)</strong> Click <strong>Analyze Selected</strong> for the full Trade Card (Levels + Position + Orders).</p>
-            <p><strong>4)</strong> If you trade, click <strong>Mark Trade Taken</strong> to protect yourself.</p>
+            <p><strong>1)</strong> Click <strong>Scan Best Trades</strong>.</p>
+            <p><strong>2)</strong> Click a candidate → it becomes <strong>Selected</strong>.</p>
+            <p><strong>3)</strong> Click <strong>Analyze Selected</strong> for Levels + Orders.</p>
+            <p><strong>4)</strong> If you trade, click <strong>Mark Trade Taken</strong> (protects you).</p>
           </div>
         </div>
       </div>
@@ -380,8 +372,11 @@
 <script>
 let lastCard = null;
 let selectedSymbol = null;
-let universeTop = []; // filled by /api/analyze?universe=1
+let universeTop = [];
 let universeLoaded = false;
+
+// fallback so Scan ALWAYS works even if universe API fails
+const FALLBACK_UNIVERSE = ["BTCUSDT","ETHUSDT","SOLUSDT","XRPUSDT","BNBUSDT"];
 
 function setBadge(el, text, kind){
   el.textContent = text;
@@ -411,7 +406,7 @@ function saveGuard(g){ localStorage.setItem(guardKey(), JSON.stringify(g)); }
 function getSettings(){
   const maxTrades = Math.max(1, Number(document.getElementById("maxTrades").value || 3));
   const cooldownMin = Math.max(0, Number(document.getElementById("cooldownMin").value || 15));
-  const sessionMode = String(document.getElementById("sessionMode").value || "OVERLAP");
+  const sessionMode = String(document.getElementById("sessionMode").value || "OFF");
   return { maxTrades, cooldownMin, sessionMode };
 }
 
@@ -433,7 +428,7 @@ function sessionStatus(){
     OVERLAP: { start: 8*60, end: 10*60, label: "Overlap (08:00–10:00 CT)" },
     OFF:     { start: 0,    end: 24*60, label: "Off (all day)" }
   };
-  const w = windows[sessionMode] || windows.OVERLAP;
+  const w = windows[sessionMode] || windows.OFF;
   const allowed = sessionMode === "OFF" ? true : inWindow(now.minutes, w.start, w.end);
   return { now, mode: sessionMode, allowed, label: w.label };
 }
@@ -464,33 +459,33 @@ function renderGuard(){
   const timeLeftEl = document.getElementById("guardTimeLeft");
 
   if(s.maxed){
-    timeLeftEl.textContent = "Blocked: max trades reached for today.";
+    timeLeftEl.textContent = "Blocks Analyze: max trades reached for today.";
     setBadge(document.getElementById("guardBadge"), "BLOCKED (MAX)", "bad");
   } else if(s.coolingDown){
-    timeLeftEl.textContent = `Cooldown: ${s.timeLeftMin} min left.`;
+    timeLeftEl.textContent = `Blocks Analyze: cooldown ${s.timeLeftMin} min left.`;
     setBadge(document.getElementById("guardBadge"), "BLOCKED (COOLDOWN)", "warn");
   } else {
-    timeLeftEl.textContent = "Clear: you can trade if signal appears.";
+    timeLeftEl.textContent = "Clear: Analyze allowed if session allows.";
     setBadge(document.getElementById("guardBadge"), "ACTIVE", "good");
   }
 }
 
-function applyCombinedLocks(){
+function applyLocks(){
+  // Scan should ALWAYS be clickable.
+  // Analyze is protected by guard/session and requires a selection.
   const g = guardStatus();
   const s = sessionStatus();
-  const blocked = g.maxed || g.coolingDown || !s.allowed;
+  const analyzeBlocked = g.maxed || g.coolingDown || !s.allowed || !selectedSymbol;
 
-  document.getElementById("scanBtn").disabled = blocked || !universeLoaded;
-  document.getElementById("analyzeBtn").disabled = blocked || !selectedSymbol;
+  document.getElementById("scanBtn").disabled = false;
+  document.getElementById("analyzeBtn").disabled = analyzeBlocked;
 
-  if(g.maxed){
-    setBadge(document.getElementById("statusBadge"), "Blocked (Max trades)", "bad");
-  } else if(g.coolingDown){
-    setBadge(document.getElementById("statusBadge"), "Blocked (Cooldown)", "warn");
-  } else if(!s.allowed){
-    setBadge(document.getElementById("statusBadge"), "Blocked (Out of session)", "warn");
+  if(!universeLoaded){
+    setBadge(document.getElementById("statusBadge"), "Universe: fallback", "warn");
+  } else if(analyzeBlocked && selectedSymbol){
+    setBadge(document.getElementById("statusBadge"), "Analyze blocked", "warn");
   } else {
-    setBadge(document.getElementById("statusBadge"), (universeLoaded ? "Ready" : "Loading universe…"), universeLoaded ? "good" : "warn");
+    setBadge(document.getElementById("statusBadge"), "Ready", "good");
   }
 }
 
@@ -606,10 +601,6 @@ Notes:
 }
 
 function scoreFromCard(card){
-  // MVP score:
-  // - trend exists
-  // - TRADE_AVAILABLE is top priority
-  // - NO_TRADE still can rank if "waiting for reclaim close" etc.
   let s = 0;
   const dir = card?.trend?.dir || "NONE";
   if(dir === "UP" || dir === "DOWN") s += 45;
@@ -630,36 +621,39 @@ function pillKind(state){
 function setSelected(sym){
   selectedSymbol = sym;
   document.getElementById("selectedBadge").textContent = "Selected: " + sym;
-  applyCombinedLocks();
+  applyLocks();
 }
 
 async function loadUniverse(){
+  const chip = document.getElementById("universeChip");
   try{
-    setBadge(document.getElementById("statusBadge"), "Loading universe…", "warn");
+    chip.textContent = "Universe: Loading…";
     const r = await fetch("/api/analyze?universe=1", { cache: "no-store" });
     const uni = await r.json();
     const top = Array.isArray(uni?.top) ? uni.top : [];
     universeTop = top.map((x,i)=>({ symbol:x.symbol, rank:i+1, turnover24h:x.turnover24h, lastPrice:x.lastPrice }));
     universeLoaded = universeTop.length > 0;
-    setBadge(document.getElementById("statusBadge"), universeLoaded ? "Ready" : "Universe empty", universeLoaded ? "good" : "warn");
+
+    if(universeLoaded){
+      chip.textContent = "Universe: Top 50 loaded";
+      chip.classList.remove("warn","bad");
+      chip.classList.add("good");
+    } else {
+      throw new Error("Universe empty");
+    }
   } catch(e){
     universeLoaded = false;
-    setBadge(document.getElementById("statusBadge"), "Universe load failed", "bad");
+    universeTop = FALLBACK_UNIVERSE.map((s,i)=>({ symbol:s, rank:i+1, turnover24h:0, lastPrice:null }));
+    chip.textContent = "Universe: Fallback (API failed)";
+    chip.classList.remove("good");
+    chip.classList.add("warn");
   } finally {
     tick();
   }
 }
 
 async function scanTop3(){
-  tick();
-  if(!universeLoaded){ alert("Universe not loaded yet."); return; }
-
-  const g = guardStatus();
-  const s = sessionStatus();
-  if(g.maxed){ alert("Blocked: max trades reached today."); return; }
-  if(g.coolingDown){ alert(`Blocked: cooldown active (${g.timeLeftMin} min left).`); return; }
-  if(!s.allowed){ alert("Blocked: out of your chosen session window."); return; }
-
+  // Scan should always do something, even in fallback mode.
   const equity = document.getElementById("equity").value || 200;
   const test = document.getElementById("testToggle").checked;
 
@@ -667,8 +661,7 @@ async function scanTop3(){
   document.getElementById("top3Badge").textContent = "Scanning…";
   document.getElementById("top3List").innerHTML = "";
 
-  // MVP speed: scan top 20 by turnover; we can move to all 50 later with caching.
-  const scanList = universeTop.slice(0, 20).map(x => x.symbol);
+  const scanList = (universeLoaded ? universeTop.slice(0, 20).map(x => x.symbol) : FALLBACK_UNIVERSE);
 
   const results = [];
   for(const sym of scanList){
@@ -677,14 +670,7 @@ async function scanTop3(){
     try{
       const r = await fetch(url, { cache: "no-store" });
       const j = await r.json();
-      results.push({
-        symbol: sym,
-        score: scoreFromCard(j),
-        state: j.state,
-        trend: j.trend?.dir || "NONE",
-        reason: j.reason || "",
-        card: j
-      });
+      results.push({ symbol: sym, score: scoreFromCard(j), state: j.state, trend: j.trend?.dir || "NONE", reason: j.reason || "", card: j });
     } catch(e){
       results.push({ symbol: sym, score: 0, state: "NO_TRADE", trend: "NONE", reason: "Fetch failed", card: null });
     }
@@ -713,7 +699,6 @@ function renderTop3(items){
     row.className = "row";
     row.onclick = () => {
       setSelected(it.symbol);
-      // show a preview in Raw JSON so user knows selection context
       document.getElementById("raw").textContent = JSON.stringify(it.card || it, null, 2);
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -733,8 +718,8 @@ function renderTop3(items){
 }
 
 async function analyzeSelected(){
-  tick();
-  if(!selectedSymbol){ alert("Pick a candidate from Scan first."); return; }
+  // Analyze IS protected (this is where we "protect you from yourself")
+  if(!selectedSymbol){ alert("Scan first, then click a candidate to select it."); return; }
 
   const g = guardStatus();
   const s = sessionStatus();
@@ -784,7 +769,7 @@ async function analyzeSelected(){
 function tick(){
   renderSession();
   renderGuard();
-  applyCombinedLocks();
+  applyLocks();
 }
 
 document.getElementById("maxTrades").addEventListener("change", tick);

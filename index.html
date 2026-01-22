@@ -68,7 +68,7 @@
     .badge.bad{color:rgba(255,92,122,1);border-color:rgba(255,92,122,.35);background:rgba(255,92,122,.10)}
 
     .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    select,input{
+    input{
       background: var(--panel2);
       border:1px solid var(--border);
       color:var(--text);
@@ -77,11 +77,8 @@
       outline:none;
       font-size:14px;
       font-family: inherit;
+      width:160px;
     }
-    input{width:160px}
-    .tiny{width:120px}
-    .wide{min-width:240px}
-
     button{
       padding:10px 14px;
       border-radius:12px;
@@ -98,10 +95,10 @@
     button:disabled{opacity:.55; cursor:not-allowed; transform:none;}
     .btnPrimary{background: rgba(37,99,235,.35); border-color: rgba(37,99,235,.55);}
     .btnPrimary:hover{background: rgba(37,99,235,.45);}
-    .btnDanger{background: rgba(255,92,122,.18); border-color: rgba(255,92,122,.40);}
-    .btnDanger:hover{background: rgba(255,92,122,.24);}
     .btnGood{background: rgba(36,209,138,.16); border-color: rgba(36,209,138,.40);}
     .btnGood:hover{background: rgba(36,209,138,.22);}
+    .btnDanger{background: rgba(255,92,122,.18); border-color: rgba(255,92,122,.40);}
+    .btnDanger:hover{background: rgba(255,92,122,.24);}
 
     .toggle{
       display:flex;align-items:center;gap:8px;
@@ -177,6 +174,7 @@
     .pill.good{border-color:rgba(36,209,138,.35);background:rgba(36,209,138,.10);color:rgba(36,209,138,1)}
     .pill.warn{border-color:rgba(255,209,102,.35);background:rgba(255,209,102,.10);color:rgba(255,209,102,1)}
     .pill.bad{border-color:rgba(255,92,122,.35);background:rgba(255,92,122,.10);color:rgba(255,92,122,1)}
+    .hint{font-size:12px;color:rgba(238,242,255,.70);margin-top:8px}
     .sideNote{color:rgba(238,242,255,.76);font-size:13px;line-height:1.55}
     .sideNote strong{color:var(--text)}
   </style>
@@ -186,9 +184,9 @@
     <div class="top">
       <div>
         <h1>Guardian Futures Engine</h1>
-        <div class="sub">Decision support first — disciplined signals only. (Timezone: America/Chicago)</div>
+        <div class="sub">Scan → choose → analyze. No clutter. Only high-quality candidates. (Timezone: America/Chicago)</div>
         <div class="chips">
-          <span class="chip" id="universeChip">Universe: Loading…</span>
+          <span class="chip" id="universeChip">Universe: Top 50 (Bybit)</span>
           <span class="chip">Session Filter</span>
           <span class="chip">Trade Guard</span>
           <span class="chip">Levels + Orders</span>
@@ -202,32 +200,31 @@
         <div class="cardHeader">
           <div class="titleRow">
             <div style="font-weight:900;">Trade Card</div>
+            <div class="badge" id="selectedBadge">Selected: —</div>
             <div class="badge" id="stateBadge">—</div>
             <div class="badge" id="trendBadge">15m: —</div>
           </div>
-          <div class="controls">
-            <select id="symbol" class="wide" title="Top 50 Bybit linear perps (dynamic)"></select>
-            <button id="refreshUniverseBtn" onclick="loadUniverse(true)">Refresh Top 50</button>
 
+          <div class="controls">
+            <button class="btnGood" id="scanBtn" onclick="scanTop3()">Scan Best Trades</button>
             <input id="equity" type="number" value="200" min="10" step="10" />
             <label class="toggle" title="For UI testing only (forces levels).">
               <input id="testToggle" type="checkbox" />
               <span>Test</span><small>mode</small>
             </label>
-
-            <button class="btnPrimary" id="analyzeBtn" onclick="run()">Analyze</button>
-            <button id="scanBtn" onclick="scanTop3()">Scan Top 3</button>
+            <button class="btnPrimary" id="analyzeBtn" onclick="analyzeSelected()">Analyze Selected</button>
           </div>
         </div>
 
         <div class="cardBody">
 
           <!-- TOP 3 -->
-          <div class="box" id="top3Box" style="display:none;">
+          <div class="box" id="top3Box">
             <div class="boxHead">
-              <h3>Top Opportunities (0–3)</h3>
-              <div class="badge" id="top3Badge">—</div>
+              <h3>Best Trades Right Now (Top 3)</h3>
+              <div class="badge" id="top3Badge">Click Scan</div>
             </div>
+            <div class="hint">Click a candidate to select it. Then click Analyze Selected.</div>
             <div class="list" id="top3List"></div>
           </div>
 
@@ -242,7 +239,7 @@
               <div class="cell">
                 <div class="k">Allowed session</div>
                 <div class="v">
-                  <select id="sessionMode">
+                  <select id="sessionMode" style="width:100%;">
                     <option value="OVERLAP">Overlap (best)</option>
                     <option value="NY">New York</option>
                     <option value="LONDON">London</option>
@@ -357,7 +354,7 @@
           <!-- WHY -->
           <div class="box">
             <div class="boxHead"><h3>Why</h3><div class="badge" id="whyCount">0</div></div>
-            <ul class="whyList" id="whyList"><li>Click Analyze to load a Trade Card.</li></ul>
+            <ul class="whyList" id="whyList"><li>Scan first, then analyze a selected candidate.</li></ul>
           </div>
 
           <div class="mono" id="raw">Waiting…</div>
@@ -370,9 +367,10 @@
         </div>
         <div class="cardBody">
           <div class="sideNote">
-            <p><strong>1)</strong> Choose a symbol from the <strong>Top 50</strong> dropdown.</p>
-            <p><strong>2)</strong> Analyze → wait for <strong>TRADE_AVAILABLE</strong>.</p>
-            <p><strong>3)</strong> Or click <strong>Scan Top 3</strong> to find the best candidates right now.</p>
+            <p><strong>1)</strong> Click <strong>Scan Best Trades</strong> (Top 50 universe).</p>
+            <p><strong>2)</strong> Click one candidate → it becomes <strong>Selected</strong>.</p>
+            <p><strong>3)</strong> Click <strong>Analyze Selected</strong> for the full Trade Card (Levels + Position + Orders).</p>
+            <p><strong>4)</strong> If you trade, click <strong>Mark Trade Taken</strong> to protect yourself.</p>
           </div>
         </div>
       </div>
@@ -381,9 +379,9 @@
 
 <script>
 let lastCard = null;
+let selectedSymbol = null;
+let universeTop = []; // filled by /api/analyze?universe=1
 let universeLoaded = false;
-let universeTop = []; // [{symbol,lastPrice,turnover24h,rank}]
-const LAST_SYMBOL_KEY = "guardian:lastSymbol";
 
 function setBadge(el, text, kind){
   el.textContent = text;
@@ -482,8 +480,8 @@ function applyCombinedLocks(){
   const s = sessionStatus();
   const blocked = g.maxed || g.coolingDown || !s.allowed;
 
-  document.getElementById("analyzeBtn").disabled = blocked;
   document.getElementById("scanBtn").disabled = blocked || !universeLoaded;
+  document.getElementById("analyzeBtn").disabled = blocked || !selectedSymbol;
 
   if(g.maxed){
     setBadge(document.getElementById("statusBadge"), "Blocked (Max trades)", "bad");
@@ -492,7 +490,7 @@ function applyCombinedLocks(){
   } else if(!s.allowed){
     setBadge(document.getElementById("statusBadge"), "Blocked (Out of session)", "warn");
   } else {
-    setBadge(document.getElementById("statusBadge"), universeLoaded ? "Ready" : "Ready (Universe pending)", "good");
+    setBadge(document.getElementById("statusBadge"), (universeLoaded ? "Ready" : "Loading universe…"), universeLoaded ? "good" : "warn");
   }
 }
 
@@ -608,13 +606,19 @@ Notes:
 }
 
 function scoreFromCard(card){
+  // MVP score:
+  // - trend exists
+  // - TRADE_AVAILABLE is top priority
+  // - NO_TRADE still can rank if "waiting for reclaim close" etc.
   let s = 0;
   const dir = card?.trend?.dir || "NONE";
   if(dir === "UP" || dir === "DOWN") s += 45;
-  if(card?.state === "TRADE_AVAILABLE") s += 45;
+  if(card?.state === "TRADE_AVAILABLE") s += 50;
   if(card?.state === "NO_TRADE") s += 20;
-  if(String(card?.reason || "").includes("invalid")) s -= 25;
-  if(String(card?.reason || "").includes("Data fetch failed")) s -= 40;
+  const reason = String(card?.reason || "").toLowerCase();
+  if(reason.includes("waiting")) s += 10;
+  if(reason.includes("invalid")) s -= 25;
+  if(reason.includes("fetch failed") || reason.includes("403")) s -= 40;
   return Math.max(0, Math.min(100, s));
 }
 function pillKind(state){
@@ -623,122 +627,26 @@ function pillKind(state){
   return "warn";
 }
 
-async function loadUniverse(force=false){
-  const btn = document.getElementById("refreshUniverseBtn");
-  const chip = document.getElementById("universeChip");
-  const sel = document.getElementById("symbol");
-
-  try{
-    btn.disabled = true;
-    chip.textContent = "Universe: Loading…";
-    chip.classList.remove("good","warn","bad");
-
-    const cacheKey = "guardian:universe:top50";
-    const cacheTsKey = "guardian:universe:top50:ts";
-    const now = Date.now();
-    const cachedTs = Number(localStorage.getItem(cacheTsKey) || 0);
-    const cachedRaw = localStorage.getItem(cacheKey);
-
-    let uni = null;
-    if(!force && cachedRaw && (now - cachedTs) < 60_000){
-      uni = JSON.parse(cachedRaw);
-    } else {
-      const r = await fetch("/api/analyze?universe=1", { cache: "no-store" });
-      uni = await r.json();
-      localStorage.setItem(cacheKey, JSON.stringify(uni));
-      localStorage.setItem(cacheTsKey, String(now));
-    }
-
-    const top = Array.isArray(uni?.top) ? uni.top : [];
-    if(!top.length) throw new Error("Universe empty");
-
-    universeTop = top.map((x, i) => ({
-      symbol: x.symbol,
-      lastPrice: x.lastPrice,
-      turnover24h: x.turnover24h,
-      rank: i+1
-    }));
-
-    const last = localStorage.getItem(LAST_SYMBOL_KEY) || "BTCUSDT";
-
-    sel.innerHTML = "";
-    for(const it of universeTop){
-      const opt = document.createElement("option");
-      opt.value = it.symbol;
-      opt.textContent = `#${it.rank}  ${it.symbol}`;
-      sel.appendChild(opt);
-    }
-
-    // restore last selection if still in list
-    if(universeTop.find(x => x.symbol === last)){
-      sel.value = last;
-    } else {
-      sel.value = universeTop[0].symbol;
-    }
-
-    sel.onchange = () => localStorage.setItem(LAST_SYMBOL_KEY, sel.value);
-
-    universeLoaded = true;
-    chip.textContent = "Universe: Top 50 loaded";
-    chip.classList.add("good");
-  } catch(e){
-    universeLoaded = false;
-    chip.textContent = "Universe: load failed";
-    chip.classList.add("warn");
-  } finally {
-    btn.disabled = false;
-    tick();
-  }
+function setSelected(sym){
+  selectedSymbol = sym;
+  document.getElementById("selectedBadge").textContent = "Selected: " + sym;
+  applyCombinedLocks();
 }
 
-async function run(){
-  tick();
-  const g = guardStatus();
-  const s = sessionStatus();
-  if(g.maxed){ alert("Blocked: max trades reached today."); return; }
-  if(g.coolingDown){ alert(`Blocked: cooldown active (${g.timeLeftMin} min left).`); return; }
-  if(!s.allowed){ alert("Blocked: out of your chosen session window."); return; }
-
-  const symbol = document.getElementById("symbol").value;
-  localStorage.setItem(LAST_SYMBOL_KEY, symbol);
-
-  const equity = document.getElementById("equity").value || 200;
-  const test = document.getElementById("testToggle").checked;
-
-  setBadge(document.getElementById("statusBadge"), "Fetching…", "warn");
-
-  let url = "/api/analyze?symbol=" + encodeURIComponent(symbol) + "&equity=" + encodeURIComponent(equity);
-  if(test) url += "&test=1";
-
+async function loadUniverse(){
   try{
-    const r = await fetch(url, { cache: "no-store" });
-    const j = await r.json();
-    lastCard = j;
-
-    const state = j.state || "NO_TRADE";
-    const dir = j.trend?.dir || "NONE";
-    setBadge(document.getElementById("stateBadge"), state, state === "TRADE_AVAILABLE" ? "good" : state === "BLOCKED" ? "bad" : "warn");
-    setBadge(document.getElementById("trendBadge"), "15m: " + dir, dir === "UP" ? "good" : dir === "DOWN" ? "bad" : "warn");
-
-    document.getElementById("kvSymbol").textContent = j.symbol || symbol;
-    document.getElementById("kvTrend").textContent = dir;
-    document.getElementById("kvReason").textContent = j.reason || "—";
-    document.getElementById("kvAction").textContent =
-      state === "TRADE_AVAILABLE" ? "Trade allowed" :
-      state === "BLOCKED" ? "Trading blocked" :
-      "Stand down";
-
-    renderWhy(j.why);
-    showLevels(j.levels);
-    showPosition(j.position);
-    showOrders(j.orders);
-
-    document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
-
-    setBadge(document.getElementById("statusBadge"), "Ready", "good");
+    setBadge(document.getElementById("statusBadge"), "Loading universe…", "warn");
+    const r = await fetch("/api/analyze?universe=1", { cache: "no-store" });
+    const uni = await r.json();
+    const top = Array.isArray(uni?.top) ? uni.top : [];
+    universeTop = top.map((x,i)=>({ symbol:x.symbol, rank:i+1, turnover24h:x.turnover24h, lastPrice:x.lastPrice }));
+    universeLoaded = universeTop.length > 0;
+    setBadge(document.getElementById("statusBadge"), universeLoaded ? "Ready" : "Universe empty", universeLoaded ? "good" : "warn");
   } catch(e){
-    setBadge(document.getElementById("statusBadge"), "Error", "bad");
-    document.getElementById("raw").textContent = "Fetch failed: " + String(e?.message || e);
+    universeLoaded = false;
+    setBadge(document.getElementById("statusBadge"), "Universe load failed", "bad");
+  } finally {
+    tick();
   }
 }
 
@@ -756,10 +664,11 @@ async function scanTop3(){
   const test = document.getElementById("testToggle").checked;
 
   setBadge(document.getElementById("statusBadge"), "Scanning…", "warn");
-  document.getElementById("top3Box").style.display = "none";
+  document.getElementById("top3Badge").textContent = "Scanning…";
+  document.getElementById("top3List").innerHTML = "";
 
-  // MVP: scan top 15 by turnover for speed.
-  const scanList = universeTop.slice(0, 15).map(x => x.symbol);
+  // MVP speed: scan top 20 by turnover; we can move to all 50 later with caching.
+  const scanList = universeTop.slice(0, 20).map(x => x.symbol);
 
   const results = [];
   for(const sym of scanList){
@@ -768,8 +677,14 @@ async function scanTop3(){
     try{
       const r = await fetch(url, { cache: "no-store" });
       const j = await r.json();
-      const score = scoreFromCard(j);
-      results.push({ symbol: sym, score, state: j.state, trend: j.trend?.dir || "NONE", reason: j.reason || "", card: j });
+      results.push({
+        symbol: sym,
+        score: scoreFromCard(j),
+        state: j.state,
+        trend: j.trend?.dir || "NONE",
+        reason: j.reason || "",
+        card: j
+      });
     } catch(e){
       results.push({ symbol: sym, score: 0, state: "NO_TRADE", trend: "NONE", reason: "Fetch failed", card: null });
     }
@@ -781,43 +696,25 @@ async function scanTop3(){
 }
 
 function renderTop3(items){
-  const box = document.getElementById("top3Box");
   const list = document.getElementById("top3List");
-  const badge = document.getElementById("top3Badge");
-
   list.innerHTML = "";
-  box.style.display = "block";
-  badge.textContent = items.length ? `Showing ${items.length}` : "None";
+  document.getElementById("top3Badge").textContent = items.length ? `Showing ${items.length}` : "No candidates";
+
+  if(!items.length){
+    const d = document.createElement("div");
+    d.className = "hint";
+    d.textContent = "No scan results.";
+    list.appendChild(d);
+    return;
+  }
 
   for(const it of items){
     const row = document.createElement("div");
     row.className = "row";
     row.onclick = () => {
-      document.getElementById("symbol").value = it.symbol;
-      localStorage.setItem(LAST_SYMBOL_KEY, it.symbol);
-      // render cached card immediately
-      if(it.card){
-        const j = it.card;
-        lastCard = j;
-        const state = j.state || "NO_TRADE";
-        const dir = j.trend?.dir || "NONE";
-        setBadge(document.getElementById("stateBadge"), state, state === "TRADE_AVAILABLE" ? "good" : state === "BLOCKED" ? "bad" : "warn");
-        setBadge(document.getElementById("trendBadge"), "15m: " + dir, dir === "UP" ? "good" : dir === "DOWN" ? "bad" : "warn");
-        document.getElementById("kvSymbol").textContent = j.symbol || it.symbol;
-        document.getElementById("kvTrend").textContent = dir;
-        document.getElementById("kvReason").textContent = j.reason || "—";
-        document.getElementById("kvAction").textContent =
-          state === "TRADE_AVAILABLE" ? "Trade allowed" :
-          state === "BLOCKED" ? "Trading blocked" :
-          "Stand down";
-        renderWhy(j.why);
-        showLevels(j.levels);
-        showPosition(j.position);
-        showOrders(j.orders);
-        document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
-      } else {
-        run();
-      }
+      setSelected(it.symbol);
+      // show a preview in Raw JSON so user knows selection context
+      document.getElementById("raw").textContent = JSON.stringify(it.card || it, null, 2);
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
@@ -827,13 +724,60 @@ function renderTop3(items){
 
     const right = document.createElement("div");
     right.className = "right";
-    right.innerHTML = `
-      <span class="pill ${pillKind(it.state)}">${it.state}</span>
-      <span class="pill">${it.trend}</span>
-    `;
+    right.innerHTML = `<span class="pill ${pillKind(it.state)}">${it.state}</span><span class="pill">${it.trend}</span>`;
+
     row.appendChild(left);
     row.appendChild(right);
     list.appendChild(row);
+  }
+}
+
+async function analyzeSelected(){
+  tick();
+  if(!selectedSymbol){ alert("Pick a candidate from Scan first."); return; }
+
+  const g = guardStatus();
+  const s = sessionStatus();
+  if(g.maxed){ alert("Blocked: max trades reached today."); return; }
+  if(g.coolingDown){ alert(`Blocked: cooldown active (${g.timeLeftMin} min left).`); return; }
+  if(!s.allowed){ alert("Blocked: out of your chosen session window."); return; }
+
+  const equity = document.getElementById("equity").value || 200;
+  const test = document.getElementById("testToggle").checked;
+
+  setBadge(document.getElementById("statusBadge"), "Analyzing…", "warn");
+
+  let url = "/api/analyze?symbol=" + encodeURIComponent(selectedSymbol) + "&equity=" + encodeURIComponent(equity);
+  if(test) url += "&test=1";
+
+  try{
+    const r = await fetch(url, { cache: "no-store" });
+    const j = await r.json();
+    lastCard = j;
+
+    const state = j.state || "NO_TRADE";
+    const dir = j.trend?.dir || "NONE";
+    setBadge(document.getElementById("stateBadge"), state, state === "TRADE_AVAILABLE" ? "good" : state === "BLOCKED" ? "bad" : "warn");
+    setBadge(document.getElementById("trendBadge"), "15m: " + dir, dir === "UP" ? "good" : dir === "DOWN" ? "bad" : "warn");
+
+    document.getElementById("kvSymbol").textContent = j.symbol || selectedSymbol;
+    document.getElementById("kvTrend").textContent = dir;
+    document.getElementById("kvReason").textContent = j.reason || "—";
+    document.getElementById("kvAction").textContent =
+      state === "TRADE_AVAILABLE" ? "Trade allowed" :
+      state === "BLOCKED" ? "Trading blocked" :
+      "Stand down";
+
+    renderWhy(j.why);
+    showLevels(j.levels);
+    showPosition(j.position);
+    showOrders(j.orders);
+
+    document.getElementById("raw").textContent = JSON.stringify(j, null, 2);
+    setBadge(document.getElementById("statusBadge"), "Ready", "good");
+  } catch(e){
+    setBadge(document.getElementById("statusBadge"), "Error", "bad");
+    document.getElementById("raw").textContent = "Fetch failed: " + String(e?.message || e);
   }
 }
 
@@ -848,7 +792,7 @@ document.getElementById("cooldownMin").addEventListener("change", tick);
 document.getElementById("sessionMode").addEventListener("change", tick);
 
 tick();
-loadUniverse(false);
+loadUniverse();
 setInterval(tick, 1000 * 20);
 </script>
 </body>
